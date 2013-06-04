@@ -450,6 +450,7 @@ sub getRastGenomeData
 		}
         push(@{$output->{features}}, $newRow);
 	}
+	print Data::Dumper->Dump([$output]);
     $self->_clearContext();
     #END getRastGenomeData
     my @_bad_returns;
