@@ -391,6 +391,7 @@ sub getRastGenomeData
         $self->_error("Could not find genome data!",'getRastGenomeData');
     }
     $output->{source} = $rastjob->{source};
+    $output->{directory} = $rastjob->{directory};
 	#Loading genomes with FIGV
 	require FIGV;
 	my $figv = new FIGV($output->{directory});
