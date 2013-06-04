@@ -392,63 +392,63 @@ sub getRastGenomeData
     }
     $output->{source} = $rastjob->{source};
 	#Loading genomes with FIGV
-#	require FIGV;
-#	my $figv = new FIGV($output->{directory});
-#	if (!defined($figv)) {
-#        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Failed to load FIGV",
-#        method_name => 'getRastGenomeData');
-#	}
-#	if ($params->{getDNASequence} == 1) {
-#		my @contigs = $figv->all_contigs($params->{genome});
-#		for (my $i=0; $i < @contigs; $i++) {
-#			my $contigLength = $figv->contig_ln($params->{genome},$contigs[$i]);
-#			push(@{$output->{DNAsequence}},$figv->get_dna($params->{genome},$contigs[$i],1,$contigLength));
-#		}
-#	}
-#	$output->{activeSubsystems} = $figv->active_subsystems($params->{genome});
-#	my $completetaxonomy = $self->_load_single_column_file($output->{directory}."/TAXONOMY","\t")->[0];
-#	$completetaxonomy =~ s/;\s/;/g;
-#	my $taxArray = [split(/;/,$completetaxonomy)];
-#	$output->{name} = pop(@{$taxArray});
-#	$output->{taxonomy} = join("|",@{$taxArray});
-#	$output->{size} = $figv->genome_szdna($params->{genome});
-#	my $GenomeData = $figv->all_features_detailed_fast($params->{genome});
-#	foreach my $Row (@{$GenomeData}) {
-#		my $RoleArray;
-#		if (defined($Row->[6])) {
-#			push(@{$RoleArray},$self->_roles_of_function($Row->[6]));
-#		} else {
-#			$RoleArray = ["NONE"];
-#		}
-#		my $AliaseArray;
-#		push(@{$AliaseArray},split(/,/,$Row->[2]));
-#		my $Sequence;
-#		if (defined($params->{getSequences}) && $params->{getSequences} == 1) {
-#			$Sequence = $figv->get_translation($Row->[0]);
-#		}
-#		my $Direction ="for";
-#		my @temp = split(/_/,$Row->[1]);
-#		if ($temp[@temp-2] > $temp[@temp-1]) {
-#			$Direction = "rev";
-#		}
-#        my $newRow = {
-#            "ID"           => [ $Row->[0] ],
-#            "GENOME"       => [ $params->{genome} ],
-#            "ALIASES"      => $AliaseArray,
-#            "TYPE"         => [ $Row->[3] ],
-#            "LOCATION"     => [ $Row->[1] ],
-#            "DIRECTION"    => [$Direction],
-#            "LENGTH"       => [ $Row->[5] - $Row->[4] ],
-#            "MIN LOCATION" => [ $Row->[4] ],
-#            "MAX LOCATION" => [ $Row->[5] ],
-#            "SOURCE"       => [ $output->{source} ],
-#            "ROLES"        => $RoleArray
-#        };
-#		if (defined($Sequence) && length($Sequence) > 0) {
-#			$newRow->{SEQUENCE}->[0] = $Sequence;
-#		}
-#        push(@{$output->{features}}, $newRow);
-#	}
+	require FIGV;
+	my $figv = new FIGV($output->{directory});
+	if (!defined($figv)) {
+        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Failed to load FIGV",
+        method_name => 'getRastGenomeData');
+	}
+	if ($params->{getDNASequence} == 1) {
+		my @contigs = $figv->all_contigs($params->{genome});
+		for (my $i=0; $i < @contigs; $i++) {
+			my $contigLength = $figv->contig_ln($params->{genome},$contigs[$i]);
+			push(@{$output->{DNAsequence}},$figv->get_dna($params->{genome},$contigs[$i],1,$contigLength));
+		}
+	}
+	$output->{activeSubsystems} = $figv->active_subsystems($params->{genome});
+	my $completetaxonomy = $self->_load_single_column_file($output->{directory}."/TAXONOMY","\t")->[0];
+	$completetaxonomy =~ s/;\s/;/g;
+	my $taxArray = [split(/;/,$completetaxonomy)];
+	$output->{name} = pop(@{$taxArray});
+	$output->{taxonomy} = join("|",@{$taxArray});
+	$output->{size} = $figv->genome_szdna($params->{genome});
+	my $GenomeData = $figv->all_features_detailed_fast($params->{genome});
+	foreach my $Row (@{$GenomeData}) {
+		my $RoleArray;
+		if (defined($Row->[6])) {
+			push(@{$RoleArray},$self->_roles_of_function($Row->[6]));
+		} else {
+			$RoleArray = ["NONE"];
+		}
+		my $AliaseArray;
+		push(@{$AliaseArray},split(/,/,$Row->[2]));
+		my $Sequence;
+		if (defined($params->{getSequences}) && $params->{getSequences} == 1) {
+			$Sequence = $figv->get_translation($Row->[0]);
+		}
+		my $Direction ="for";
+		my @temp = split(/_/,$Row->[1]);
+		if ($temp[@temp-2] > $temp[@temp-1]) {
+			$Direction = "rev";
+		}
+        my $newRow = {
+            "ID"           => [ $Row->[0] ],
+            "GENOME"       => [ $params->{genome} ],
+            "ALIASES"      => $AliaseArray,
+            "TYPE"         => [ $Row->[3] ],
+            "LOCATION"     => [ $Row->[1] ],
+            "DIRECTION"    => [$Direction],
+            "LENGTH"       => [ $Row->[5] - $Row->[4] ],
+            "MIN LOCATION" => [ $Row->[4] ],
+            "MAX LOCATION" => [ $Row->[5] ],
+            "SOURCE"       => [ $output->{source} ],
+            "ROLES"        => $RoleArray
+        };
+		if (defined($Sequence) && length($Sequence) > 0) {
+			$newRow->{SEQUENCE}->[0] = $Sequence;
+		}
+        push(@{$output->{features}}, $newRow);
+	}
     $self->_clearContext();
     #END getRastGenomeData
     my @_bad_returns;
