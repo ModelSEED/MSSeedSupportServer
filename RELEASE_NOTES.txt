@@ -1,0 +1,15 @@
+OVERVIEW
+-----------------------------------------
+This ModelSEED service contains all commands that support authentication against SEED
+accounts and retrieval of RAST genomes.
+
+VERSION: 0.0.1 (Released 8/4/2012)
+------------------------------------------
+NEW FEATURES:
+-This is the first internal release of the ModelSEEDSupport Service, all methods are new.
+
+UPDATED FEATURES / MAJOR BUG FIXES:
+-none.
+
+ANTICIPATED FUTURE DEVELOPMENTS:
+-public release of the service
