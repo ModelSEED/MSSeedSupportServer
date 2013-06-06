@@ -12,7 +12,7 @@ use Bio::KBase::fbaModelServices::Impl;
 use Bio::KBase::workspaceService::Client;
 
 my $c = Config::Simple->new();
-$c->read("~/kbase/deploy/MSQueue.ini");
+$c->read("/homes/chenry/kbase/deploy/MSQueue.ini");
 $|=1;
 if (!defined($ARGV[0])) {
 	exit(0);
