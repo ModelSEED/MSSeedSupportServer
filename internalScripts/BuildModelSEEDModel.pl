@@ -93,8 +93,8 @@ my $modeldata = $fbaserv->export_fbamodel({
 	auth => $job->{auth},
 });
 my $lines = [split(/\n/,$modeldata)];
-open(my $fh, ">", $directory."model.mdl") || return;
-open(my $fhb, ">", $directory."biomass.bof") || return;
+open($fh, ">", $filename."model.mdl") || return;
+open(my $fhb, ">", $filename."biomass.bof") || return;
 my $bio = 0;
 for (my $i=0; $i < @{$lines};$i++) {
 	if ($lines->[$i] =~ m/NAME\t/) {
@@ -112,14 +112,14 @@ close($fhb);
 #Importing model
 my $cmd = "perl ModelDriver.pl mdlloadmodel Seed".$job->{jobdata}->{genome}.
 	"?".$job->{jobdata}->{genome}.
-	"?0?".$directory."model.mdl".
-	"?".$directory."biomass.bof".
+	"?0?".$filename."model.mdl".
+	"?".$filename."biomass.bof".
 	"?".$job->{jobdata}->{owner}.
 	"?0?1";
-open(my $fh, ">", $directory."loadmodel.sh") || return;
+open($fh, ">", $filename."loadmodel.sh") || return;
 print $fh "sdf\nsource /homes/chenry/Model-SEED-core/bin/source-me.sh\n".$cmd."\n";
 close($fh);
-chmod 777 $directory."loadmodel.sh";
-system($directory."loadmodel.sh > ".$directory."loadmodel.out");
+chmod 0777, $filename."loadmodel.sh";
+system($filename."loadmodel.sh > ".$filename."loadmodel.out");
 
 1;
