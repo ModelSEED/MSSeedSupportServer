@@ -44,8 +44,8 @@ if (defined($directory) && -d $directory) {
 		type => "ModelSEED",
 		queuecommand => "QueueModelSEED",
 		jobdata => {
-			owner => $owners->[$i],
-			genome => $genomes->[$i],
+			owner => $owners->[0],
+			genome => $genomes->[0],
 		}
 	});
 	if (-e $directory."jobfile.json") {
