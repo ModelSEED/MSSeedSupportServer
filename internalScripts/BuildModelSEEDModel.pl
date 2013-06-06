@@ -110,14 +110,14 @@ close($fh);
 close($fhb);
 
 #Importing model
-my $cmd = "perl ModelDriver.pl mdlloadmodel Seed".$job->{jobdata}->{genome}.
+my $cmd = "perl /homes/chenry/Model-SEED-core/bin/ModelDriver.pl mdlloadmodel Seed".$job->{jobdata}->{genome}.
 	"?".$job->{jobdata}->{genome}.
 	"?0?".$filename."model.mdl".
 	"?".$filename."biomass.bof".
 	"?".$job->{jobdata}->{owner}.
 	"?0?1";
 open($fh, ">", $filename."loadmodel.sh") || return;
-print $fh "sdf\nsource /homes/chenry/Model-SEED-core/bin/source-me.sh\n".$cmd."\n";
+print $fh "source /home/chenry/FIGdisk/config/fig-user-env.sh\nsource /homes/chenry/Model-SEED-core/bin/source-me.sh\n".$cmd."\n";
 close($fh);
 chmod 0777, $filename."loadmodel.sh";
 system($filename."loadmodel.sh > ".$filename."loadmodel.out");
