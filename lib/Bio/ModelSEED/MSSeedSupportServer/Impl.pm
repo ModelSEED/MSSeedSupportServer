@@ -1,7 +1,7 @@
 package Bio::ModelSEED::MSSeedSupportServer::Impl;
 use strict;
-use DBI;
 use Bio::KBase::Exceptions;
+use DBI;
 # Use Semantic Versioning (2.0.0-rc.1)
 # http://semver.org 
 our $VERSION = "0.1.0";
@@ -51,14 +51,10 @@ sub _error {
     method_name => $method);
 }
 
-sub _authenticate_user {
-    my ($self,$username,$password) = @_;
+sub _getUserObj {
+	my ($self,$username) = @_;
 	my $db = $self->_webapp_db_connect();
-	if (!defined($db)) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
-        method_name => '_authenticate_user');
-    }
-    my $select = "SELECT * FROM User WHERE User.login = ?";
+	my $select = "SELECT * FROM User WHERE User.login = ?";
     my $columns = {
         _id       => 1,
         login     => 1,
@@ -68,53 +64,268 @@ sub _authenticate_user {
         email     => 1
     };
     my $users = $db->selectall_arrayref($select, { Slice => $columns }, $username);
-    if (!defined($users) || scalar @$users == 0) {
+	if (!defined($users) || scalar @$users == 0) {
         Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Username not found!",
-        method_name => '_authenticate_user');
+        method_name => '_getUserObj');
     }
-   return {
-    	username => $users->[0]->{login},
-    	id => $users->[0]->{_id},
-    	email => $users->[0]->{email},
-    	firstname => $users->[0]->{firstname},
-    	lastname => $users->[0]->{lastname},
-    	password => $users->[0]->{password},
-    };
+    $db->disconnect;
+    return $users->[0];
+}
+
+sub _authenticate_user {
+	my ($self,$username,$password) = @_;
+	my $userobj = $self->_getUserObj($username);
+	if ($password ne $userobj->{password} && crypt($password, $userobj->{password}) ne $userobj->{password}) {
+		Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Authentication failed!",
+        method_name => '_authenticate_user');
+	}
+	return {
+		username => $userobj->{login},
+		id => $userobj->{_id},
+		email => $userobj->{email},
+		firstname => $userobj->{firstname},
+		lastname => $userobj->{lastname},
+		password => $userobj->{password},
+	};
+}
+
+sub _addReaction {
+	my ($self,$model,$rxn,$dir,$comp,$pegs) = @_;
+	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","root");
+	my $select = "SELECT * FROM REACTION_MODEL WHERE REACTION = ? AND MODEL = ?";
+	my $rxns = $db->selectall_arrayref($select, { Slice => {MODEL => 1} }, ($model,$rxn));
+	if (!defined($rxns) || defined($rxns->[0])) {
+		$select = "INSERT INTO REACTION_MODEL ('directionality','compartment','REACTION','MODEL','pegs','confidence','reference','notes') ";
+		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE');";
+		my $rxnmdls  = $db->do($select);
+	} else {
+		$select = "UPDATE REACTION_MODEL SET 'directionality' = '".$dir."',";
+		$select .= "'compartment' = '".$comp."',";
+		$select .= "'REACTION' = '".$rxn."',";
+		$select .= "'MODEL' = '".$model."',";
+		$select .= "'pegs' = '".$pegs."',";
+		$select .= "'confidence' = '3',";
+		$select .= "'reference' = 'NONE',";
+		$select .= "'notes' = 'NONE' ";
+		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."';";
+		my $rxnmdls  = $db->do($select);
+	}
+	$db->disconnect;
+}
+
+sub _updateGenome {
+	my ($self,$data) = @_;
+    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306", "root");
+	my $select = "SELECT * FROM GENOMESTATS WHERE GENOME = ?";
+	my $bios = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
+	if (!defined($bios) || scalar $bios == 0) {        
+        my $statement = "INSERT INTO GENOMESTATS ('genesInSubsystems','owner','source','genes','GENOME','name','taxonomy',".
+        	"'gramNegGenes','size','gramPosGenes','public','genesWithFunctions','class','gcContent') ";
+		$statement .= "VALUES ('".$data->{genesInSubsystems}."','".$data->{owner}."','".$data->{source}."','".$data->{genes}."','".$data->{id}."','".
+			$data->{name}."','".$data->{taxonomy}."');";
+		$bios  = $db->do($statement);
+    } else {
+       	my $statement = "UPDATE GENOMESTATS SET 'genesInSubsystems' = '".$data->{genesInSubsystems}."',";
+		$statement .= "'owner' = '".$data->{owner}."',";
+		$statement .= "'source' = '".$data->{source}."',";
+		$statement .= "'genes' = '".$data->{genes}."',";
+		$statement .= "'GENOME' = '".$data->{id}."',";
+		$statement .= "'name' = '".$data->{name}."',";
+		$statement .= "'taxonomy' = '".$data->{taxonomy}."'";
+		$statement .= " WHERE GENOME = '".$data->{id}."';";
+		$bios  = $db->do($statement);
+    }
+    $db->disconnect;
+}
+
+sub _updateModel {
+	my ($self,$data) = @_;
+    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306", "root");
+	my $select = "SELECT * FROM MODEL WHERE id = ?";
+	my $bios = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
+	if (!defined($bios) || scalar $bios == 0) {
+        my $statement = "INSERT INTO MODEL ('source','public','status','autocompleteDate','builtDate','spontaneousReactions','gapFillReactions',".
+        "'associatedGenes','genome','reactions','modificationDate','id','biologReactions','owner','autoCompleteMedia','transporters','version',".
+        "'autoCompleteReactions','compounds','autoCompleteTime','message','associatedSubsystemGenes','autocompleteVersion','cellwalltype',".
+        "'biomassReaction','growth','noGrowthCompounds','autocompletionDualityGap','autocompletionObjective','name','defaultStudyMedia') ";
+		$statement .= "VALUES ('".$data->{source}."','".$data->{public}."','".$data->{status}."','".$data->{autocompleteDate}."','".$data->{builtDate}."','".
+			$data->{spontaneousReactions}."','".$data->{gapFillReactions}."','".$data->{associatedGenes}."','".$data->{genome}."','".
+			$data->{reactions}."','".$data->{modificationDate}."','".$data->{id}."','".$data->{biologReactions}."','".
+			$data->{owner}.",'".$data->{autoCompleteMedia}."','".$data->{transporters}."','".$data->{version}."','".
+			$data->{autoCompleteReactions}."','".$data->{compounds}."','".$data->{autoCompleteTime}."','".$data->{message}."','".
+			$data->{associatedSubsystemGenes}."','".$data->{autocompleteVersion}."','".$data->{cellwalltype}."','".$data->{biomassReaction}."','".
+			$data->{growth}."','".$data->{noGrowthCompounds}."','".$data->{autocompletionDualityGap}."','".$data->{autocompletionObjective}."','".
+			$data->{name}."','".$data->{defaultStudyMedia}."');";
+		$bios  = $db->do($statement);
+    } else {
+       	my $statement = "UPDATE BIOMASS SET 'source' = '".$data->{source}."',";
+		$statement .= "'public' = '".$data->{public}."',";
+		$statement .= "'status' = '".$data->{status}."',";
+		$statement .= "'autocompleteDate' = '".$data->{autocompleteDate}."',";
+		$statement .= "'builtDate' = '".$data->{builtDate}."',";
+		$statement .= "'spontaneousReactions' = '".$data->{spontaneousReactions}."',";
+		$statement .= "'gapFillReactions' = '".$data->{gapFillReactions}."',";
+		$statement .= "'associatedGenes' = '".$data->{associatedGenes}."',";
+		$statement .= "'reactions' = '".$data->{reactions}."',";
+		$statement .= "'modificationDate' = '".$data->{modificationDate}."',";
+		$statement .= "'id' = '".$data->{id}."',";
+		$statement .= "'biologReactions' = '".$data->{biologReactions}."',";
+		$statement .= "'autoCompleteMedia' = '".$data->{autoCompleteMedia}."',";
+		$statement .= "'cellwalltype' = '".$data->{cellwalltype}."',";
+		$statement .= "'biomassReaction' = '".$data->{biomassReaction}."',";
+		$statement .= "'growth' = '".$data->{growth}."',";
+		$statement .= "'noGrowthCompounds' = '".$data->{noGrowthCompounds}."',";
+		$statement .= "'autocompletionDualityGap' = '".$data->{autocompletionDualityGap}."',";
+		$statement .= "'autocompletionObjective' = '".$data->{autocompletionObjective}."',";
+		$statement .= "'name' = '".$data->{name}."',";
+		$statement .= "'defaultStudyMedia' = '".$data->{defaultStudyMedia}."'";
+		$statement .= " WHERE id = '".$data->{id}."';";
+		$bios  = $db->do($statement);
+    }
+    $db->disconnect;
+}
+
+sub _getBiomassID {
+	my ($self) = @_;
+	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","root");
+	my $continue = 1;
+	my $currid;
+	while ($continue == 1) {
+		my $select = "SELECT * FROM CURRENTID WHERE object = ?";
+		my $currids = $db->selectall_arrayref($select, { Slice => {id => 1} }, "bof");
+		$currid = $currids->[0]->{id};
+		my $statement = "UPDATE CURRENTID SET 'id' = '".($currid+1)."' WHERE 'id' = '".$currid."' AND 'object' = 'bof';";
+    	my $currids  = $db->do($statement);
+    	if (@{$currids} == 1) {
+    		$continue = 1;
+    	}
+	};
+	$db->disconnect;
+	return $currid;
+}
+
+sub _getModelData {
+	my ($self,$owner,$genome) = @_;
+	my $userobj = $self->_getUserObj($owner);
+	my $modelid = "Seed".$genome.".".$userobj->{_id};
+	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","root");
+	my $select = "SELECT * FROM MODEL WHERE id = ?";
+	my $models = $db->selectall_arrayref($select, { Slice => {
+		_id => 1,
+		source => 1,
+		public => 1,
+		status => 1,
+		autocompleteDate => 1,
+		builtDate => 1,
+		spontaneousReactions => 1,
+		gapFillReactions => 1,
+		associatedGenes => 1,
+		genome => 1,
+		reactions => 1,
+		modificationDate => 1,
+		id => 1,
+		biologReactions => 1,
+		owner => 1,
+		autoCompleteMedia => 1,
+		transporters => 1,
+		version => 1,
+		autoCompleteReactions => 1,
+		compounds => 1,
+		autoCompleteTime => 1,
+		message => 1,
+		associatedSubsystemGenes => 1,
+		autocompleteVersion => 1,
+		cellwalltype => 1,
+		biomassReaction => 1,
+		growth => 1,
+		noGrowthCompounds => 1,
+		autocompletionDualityGap => 1,
+		autocompletionObjective => 1,
+		name => 1,
+		defaultStudyMedia => 1,
+	} }, $modelid);
+	if (!defined($models) || scalar $models == 0) {
+        return undef;
+    }
+	$db->disconnect;
+	return $models->[0];
+}
+
+sub _addBiomass {
+	my ($self,$owner,$genome,$equation,$bioid) = @_;
+    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306", "root");
+	my $select = "SELECT * FROM BIOMASS WHERE id = ?";
+	my $bios = $db->selectall_arrayref($select, { Slice => {id => 1}}, $bioid);
+	if (!defined($bios) || scalar $bios == 0) {
+        my $statement = "INSERT INTO BIOMASS ('owner','name','public','equation','modificationDate','creationDate','id','cofactorPackage','lipidPackage','cellWallPackage','protein','DNA','RNA','lipid','cellWall','cofactor','DNACoef','RNACoef','proteinCoef','lipidCoef','cellWallCoef','cofactorCoef','essentialRxn','energy','unknownPackage','unknownCoef') ";
+		$statement .= "VALUES ('".$owner."','".$bioid."','0','".$equation."','".time()."','".time()."','".$bioid."','NONE','NONE','NONE','0.5284','0.026','0.0655','0.075','0.25','0.1','NONE','NONE','NONE','NONE','NONE','NONE','NONE','40','NONE','NONE');";
+		$bios  = $db->do($statement);
+    } else {
+       	my $statement = "UPDATE BIOMASS SET 'owner' = '".$owner."',";
+		$statement .= "'name' = '".$bioid."',";
+		$statement .= "'public' = '0',";
+		$statement .= "'equation' = '".$equation."',";
+		$statement .= "'modificationDate' = '".time()."',";
+		$statement .= "'creationDate' = '".time()."',";
+		$statement .= "'id' = '".$bioid."',";
+		$statement .= "'cofactorPackage' = 'NONE' ";
+		$statement .= "'lipidPackage' = 'NONE',";
+		$statement .= "'cellWallPackage' = 'NONE',";
+		$statement .= "'protein' = '0.5284',";
+		$statement .= "'DNA' = '0.026',";
+		$statement .= "'RNA' = '0.0655',";
+		$statement .= "'lipid' = '0.075',";
+		$statement .= "'cellWall' = '0.25' ";
+		$statement .= "'cofactor' = '0.1',";
+		$statement .= "'DNACoef' = 'NONE',";
+		$statement .= "'RNACoef' = 'NONE',";
+		$statement .= "'proteinCoef' = 'NONE',";
+		$statement .= "'lipidCoef' = 'NONE',";
+		$statement .= "'cellWallCoef' = 'NONE',";
+		$statement .= "'cofactorCoef' = 'NONE',";
+		$statement .= "'essentialRxn' = 'NONE',";
+		$statement .= "'energy' = 'NONE',";
+		$statement .= "'unknownPackage' = '40',";
+		$statement .= "'unknownCoef' = 'NONE'";
+		$statement .= " WHERE id = '".$bioid."';";
+		$bios  = $db->do($statement);
+    }
+	$db->disconnect;
 }
 
 sub _webapp_db_connect {
     my ($self) = @_;
-    if (defined($self->{_webapp_db})) {
-        return $self->{_webapp_db};
-    }
     my $dsn = "DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306";
     my $user = "webappuser";
     my $db = DBI->connect($dsn, $user);
-    $self->{_webapp_db} = $db;
+    if (!defined($db)) {
+        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
+        method_name => '_authenticate_user');
+    }
     return $db;
 }
 
 sub _rast_db_connect {
     my ($self) = @_;
-    if (defined($self->{_rast_db})) {
-        return $self->{_rast_db};
-    }
     my $dsn = "DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306";
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
-    $self->{_rast_db} = $db;
+    if (!defined($db)) {
+        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
+        method_name => '_authenticate_user');
+    }
     return $db;
 }
 
 sub _testrast_db_connect {
     my ($self) = @_;
-    if (defined($self->{_testrast_db})) {
-        return $self->{_testrast_db};
-    }
     my $dsn = "DBI:mysql:RastTestJobCache2:rast.mcs.anl.gov:3306";
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
-    $self->{_testrast_db} = $db;
+    if (!defined($db)) {
+        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
+        method_name => '_authenticate_user');
+    }
     return $db;
 }
 
@@ -136,6 +347,7 @@ sub _get_rast_job {
         genome_id   => 1
     };
     my $jobs = $db->selectall_arrayref($select, { Slice => $columns }, $genome);
+    $db->disconnect;
     return $jobs->[0];
 }
 
@@ -215,6 +427,7 @@ sub _has_right {
             return 1;
         }
     }
+    $db->disconnect;
     return 0;
 }
 
@@ -635,6 +848,164 @@ sub authenticate
 
 
 
+=head2 load_model_to_modelseed
+
+  $success = $obj->load_model_to_modelseed($params)
+
+=over 4
+
+=item Parameter and return types
+
+=begin html
+
+<pre>
+$params is a load_model_to_modelseed_params
+$success is an int
+load_model_to_modelseed_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+	owner has a value which is a string
+	genome has a value which is a string
+	reactions has a value which is a reference to a list where each element is a string
+	biomass has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+$params is a load_model_to_modelseed_params
+$success is an int
+load_model_to_modelseed_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+	owner has a value which is a string
+	genome has a value which is a string
+	reactions has a value which is a reference to a list where each element is a string
+	biomass has a value which is a string
+
+
+=end text
+
+
+
+=item Description
+
+Loads the input model to the model seed database
+
+=back
+
+=cut
+
+sub load_model_to_modelseed
+{
+    my $self = shift;
+    my($params) = @_;
+
+    my @_bad_arguments;
+    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
+    if (@_bad_arguments) {
+	my $msg = "Invalid arguments passed to load_model_to_modelseed:\n" . join("", map { "\t$_\n" } @_bad_arguments);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+							       method_name => 'load_model_to_modelseed');
+    }
+
+    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
+    my($success);
+    #BEGIN load_model_to_modelseed
+    $self->_setContext($params);
+    $params = $self->_validateargs($params,["genome","owner","reactions","biomass","cellwalltype"],{});
+    #Getting model data
+    my $data = $self->_getModelData($params->{owner},$params->{genome}->{id});
+    $data->{status} = 1;
+    $data->{spontaneousReactions} = 0;
+    $data->{gapfillReactions} = 0;
+    $data->{associatedGenes} = 0;
+    $data->{reactions} = 0;
+    $data->{biologReactions} = 0;
+    $data->{transporters} = 0;
+    $data->{autoCompleteReactions} = 0;
+    $data->{compounds} = 0;
+    $data->{message} = "Model reconstruction complete";
+    $data->{associatedSubsystemGenes} = 0;
+    $data->{cellwalltype} = $params->{cellwalltype};
+    $data->{growth} = 0;
+    #Updating the biomass table
+    my $bioid = $data->{biomass};
+    if ($bioid eq "NONE") {
+    	$bioid = $self->_getBiomassID();
+    	$data->{biomass} = $bioid;
+    }
+    $bioid = $self->_addBiomass($params->{owner},$params->{genome}->{id},$params->{biomass},$bioid);
+    $data->{biomassReaction} = $bioid;
+    #Updating the rxnmdl table
+    my $cpdhash = {};
+    my $genehash = {};
+    my $spontenous = {
+    	rxn00062 => 1,
+    	rxn01208 => 1,
+    	rxn04132 => 1,
+    	rxn04133 => 1,
+    	rxn05319 => 1,
+    	rxn05467 => 1,
+    	rxn05468 => 1,
+    	rxn02374 => 1,
+    	rxn05116 => 1,
+    	rxn03012 => 1,
+    	rxn05064 => 1,
+    	rxn02666 => 1,
+    	rxn04457 => 1,
+    	rxn04456 => 1,
+    	rxn01664 => 1,
+    	rxn02916 => 1,
+    	rxn05667 => 1
+    };
+    for (my $i=0; $i < @{$params->{reactions}};$i++) {
+    	my $rxn = $params->{reactions}->[$i];
+    	$self->_addReaction($data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs});
+    	$data->{reactions}++;
+    	if (defined($spontenous->{$rxn->{id}})) {
+    		$data->{spontaneousReactions}++;
+    	} elsif ($rxn->{pegs} eq "Unknown") {
+    		$data->{autoCompleteReactions}++;
+    	} else {
+	    	$_ = $rxn->{pegs};
+			my @array = /(peg\.\d+)/g;
+	    	for (my $j=0; $j < @array; $i++) {
+	    		$genehash->{$array[$i]} = 1;
+	    	}
+	    	$_ = $rxn->{equation};
+	    	@array = /(cpd\d+)/g;
+	    	for (my $j=0; $j < @array; $i++) {
+	    		$cpdhash->{$array[$i]} = 1;
+	    	}
+    	}
+    	if ($rxn->{equation} =~ m/e0/) {
+    		$data->{transporters}++;
+    	}
+    }
+    $data->{associatedGenes} = keys(%{$genehash});
+    $data->{compounds} = keys(%{$cpdhash});
+    $self->_addReaction($data->{id},$bioid,"=>","c","BOF");
+    #Updating the model table
+    #$self->_updateGenome($params->{genome});
+    $self->_updateModel($data);
+    $success = 1;
+    #END load_model_to_modelseed
+    my @_bad_returns;
+    (!ref($success)) or push(@_bad_returns, "Invalid type for return variable \"success\" (value was \"$success\")");
+    if (@_bad_returns) {
+	my $msg = "Invalid returns passed to load_model_to_modelseed:\n" . join("", map { "\t$_\n" } @_bad_returns);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+							       method_name => 'load_model_to_modelseed');
+    }
+    return($success);
+}
+
+
+
+
 =head2 version 
 
   $return = $obj->version()
@@ -901,6 +1272,53 @@ token has a value which is a string
 
 a reference to a hash where the following keys are defined:
 token has a value which is a string
+
+
+=end text
+
+=back
+
+
+
+=head2 load_model_to_modelseed_params
+
+=over 4
+
+
+
+=item Description
+
+Input parameters for the "load_model_to_modelseed" function.
+
+        string token;
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+owner has a value which is a string
+genome has a value which is a string
+reactions has a value which is a reference to a list where each element is a string
+biomass has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+owner has a value which is a string
+genome has a value which is a string
+reactions has a value which is a reference to a list where each element is a string
+biomass has a value which is a string
 
 
 =end text

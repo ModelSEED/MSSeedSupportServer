@@ -65,3 +65,15 @@ class MSSeedSupportServer:
         # return the results
         return [ username ]
         
+    def load_model_to_modelseed(self, params):
+        # self.ctx is set by the wsgi application class
+        # return variables are: success
+        #BEGIN load_model_to_modelseed
+        #END load_model_to_modelseed
+
+        #At some point might do deeper type checking...
+        if not isinstance(success, int):
+            raise ValueError('Method load_model_to_modelseed return value success is not type int as required.')
+        # return the results
+        return [ success ]
+        

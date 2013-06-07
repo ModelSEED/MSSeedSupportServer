@@ -16,6 +16,7 @@ our %return_counts = (
         'getRastGenomeData' => 1,
         'get_user_info' => 1,
         'authenticate' => 1,
+        'load_model_to_modelseed' => 1,
         'version' => 1,
 );
 
@@ -28,6 +29,7 @@ sub _build_valid_methods
         'getRastGenomeData' => 1,
         'get_user_info' => 1,
         'authenticate' => 1,
+        'load_model_to_modelseed' => 1,
         'version' => 1,
     };
     return $methods;

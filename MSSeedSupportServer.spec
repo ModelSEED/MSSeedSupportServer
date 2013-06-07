@@ -100,4 +100,22 @@ module MSSeedSupportServer {
         Authenticate against the SEED account
     */
     funcdef authenticate(authenticate_params params) returns (string username);
+    
+    /* Input parameters for the "load_model_to_modelseed" function.
+	
+		string token;
+		
+	*/
+	typedef structure {
+		string username;
+		string password;
+		string owner;
+		string genome;
+		list<string> reactions;
+		string biomass;
+    } load_model_to_modelseed_params;
+    /*
+        Loads the input model to the model seed database
+    */
+    funcdef load_model_to_modelseed(load_model_to_modelseed_params params) returns (int success);
 };

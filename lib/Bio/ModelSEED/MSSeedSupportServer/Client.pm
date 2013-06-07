@@ -347,6 +347,100 @@ sub authenticate
 
 
 
+=head2 load_model_to_modelseed
+
+  $success = $obj->load_model_to_modelseed($params)
+
+=over 4
+
+=item Parameter and return types
+
+=begin html
+
+<pre>
+$params is a load_model_to_modelseed_params
+$success is an int
+load_model_to_modelseed_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+	owner has a value which is a string
+	genome has a value which is a string
+	reactions has a value which is a reference to a list where each element is a string
+	biomass has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+$params is a load_model_to_modelseed_params
+$success is an int
+load_model_to_modelseed_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+	owner has a value which is a string
+	genome has a value which is a string
+	reactions has a value which is a reference to a list where each element is a string
+	biomass has a value which is a string
+
+
+=end text
+
+=item Description
+
+Loads the input model to the model seed database
+
+=back
+
+=cut
+
+sub load_model_to_modelseed
+{
+    my($self, @args) = @_;
+
+# Authentication: none
+
+    if ((my $n = @args) != 1)
+    {
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error =>
+							       "Invalid argument count for function load_model_to_modelseed (received $n, expecting 1)");
+    }
+    {
+	my($params) = @args;
+
+	my @_bad_arguments;
+        (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument 1 \"params\" (value was \"$params\")");
+        if (@_bad_arguments) {
+	    my $msg = "Invalid arguments passed to load_model_to_modelseed:\n" . join("", map { "\t$_\n" } @_bad_arguments);
+	    Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+								   method_name => 'load_model_to_modelseed');
+	}
+    }
+
+    my $result = $self->{client}->call($self->{url}, {
+	method => "MSSeedSupportServer.load_model_to_modelseed",
+	params => \@args,
+    });
+    if ($result) {
+	if ($result->is_error) {
+	    Bio::KBase::Exceptions::JSONRPC->throw(error => $result->error_message,
+					       code => $result->content->{code},
+					       method_name => 'load_model_to_modelseed',
+					      );
+	} else {
+	    return wantarray ? @{$result->result} : $result->result->[0];
+	}
+    } else {
+        Bio::KBase::Exceptions::HTTP->throw(error => "Error invoking method load_model_to_modelseed",
+					    status_line => $self->{client}->status_line,
+					    method_name => 'load_model_to_modelseed',
+				       );
+    }
+}
+
+
+
 sub version {
     my ($self) = @_;
     my $result = $self->{client}->call($self->{url}, {
@@ -358,16 +452,16 @@ sub version {
             Bio::KBase::Exceptions::JSONRPC->throw(
                 error => $result->error_message,
                 code => $result->content->{code},
-                method_name => 'authenticate',
+                method_name => 'load_model_to_modelseed',
             );
         } else {
             return wantarray ? @{$result->result} : $result->result->[0];
         }
     } else {
         Bio::KBase::Exceptions::HTTP->throw(
-            error => "Error invoking method authenticate",
+            error => "Error invoking method load_model_to_modelseed",
             status_line => $self->{client}->status_line,
-            method_name => 'authenticate',
+            method_name => 'load_model_to_modelseed',
         );
     }
 }
@@ -632,6 +726,53 @@ token has a value which is a string
 
 a reference to a hash where the following keys are defined:
 token has a value which is a string
+
+
+=end text
+
+=back
+
+
+
+=head2 load_model_to_modelseed_params
+
+=over 4
+
+
+
+=item Description
+
+Input parameters for the "load_model_to_modelseed" function.
+
+        string token;
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+owner has a value which is a string
+genome has a value which is a string
+reactions has a value which is a reference to a list where each element is a string
+biomass has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+owner has a value which is a string
+genome has a value which is a string
+reactions has a value which is a reference to a list where each element is a string
+biomass has a value which is a string
 
 
 =end text

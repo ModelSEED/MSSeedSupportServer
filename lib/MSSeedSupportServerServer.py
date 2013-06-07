@@ -149,6 +149,8 @@ class Application:
                              types = [dict])
         self.rpc_service.add(impl_MSSeedSupportServer.authenticate, name = 'MSSeedSupportServer.authenticate',
                              types = [dict])
+        self.rpc_service.add(impl_MSSeedSupportServer.load_model_to_modelseed, name = 'MSSeedSupportServer.load_model_to_modelseed',
+                             types = [dict])
 
 
     def __call__( self, environ, start_response):

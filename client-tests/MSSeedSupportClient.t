@@ -41,4 +41,15 @@ my $output;
 	ok (defined($output) && $output->{source} =~ m/^RAST/,"Genome retrieval successful!");
 #};
 
+#eval {	
+#	$output = $impl->load_model_to_modelseed({
+#		genome => {id => "315750.3"},
+#		owner => "reviewer",
+#		reactions => [],
+#		biomass => "",
+#		cellwalltype => "Gram negative",
+#	});
+#	ok (defined($output) && $output->{source} =~ m/^RAST/,"Genome retrieval successful!");
+#};
+	
 done_testing($test_count);
