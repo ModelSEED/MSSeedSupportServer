@@ -630,7 +630,7 @@ sub getRastGenomeData
 	foreach my $Row (@{$GenomeData}) {
 		my $RoleArray;
 		if (defined($Row->[6])) {
-			push(@{$RoleArray},$self->_roles_of_function($Row->[6]));
+			push(@{$RoleArray},@{$self->_roles_of_function($Row->[6])});
 		} else {
 			$RoleArray = ["NONE"];
 		}
