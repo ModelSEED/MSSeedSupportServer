@@ -15,15 +15,24 @@ $|=1;
 if (!defined($ARGV[0])) {
 	exit(0);
 }
-my $filename = $ARGV[0];
-open( my $fh, "<", $filename."jobfile.json");
 my $job;
-{
-    local $/;
-    my $str = <$fh>;
-    $job = decode_json $str;
+if (-e $ARGV[0]) {
+	my $filename = $ARGV[0];
+	open( my $fh, "<", $filename."jobfile.json");
+	my $job;
+	{
+	    local $/;
+	    my $str = <$fh>;
+	    $job = decode_json $str;
+	}
+	close($fh);
+} else {
+	$job->{jobdata}->{owner} = $ARGV[0];
+	$job->{jobdata}->{genome} = $ARGV[1];
+	$job->{wsurl} = $ARGV[2];
+	$job->{auth} = $ARGV[3];
+	$job->{accounttype} = $ARGV[4];
 }
-close($fh);
 
 my $wserv = Bio::KBase::workspaceService::Client->new($job->{wsurl});
 my $fbaserv = Bio::KBase::fbaModelServices::Impl->new({accounttype => $job->{accounttype},"workspace-url" => $job->{wsurl}});
@@ -83,43 +92,12 @@ if (!defined($objmeta)) {
 		model => "Seed".$job->{jobdata}->{genome},
 		auth => $job->{auth},
 	});
+	$fbaserv->queue_gapfill_model({
+		model => "Seed".$job->{jobdata}->{genome},
+		integrate_solution => 1,
+		workspace => $job->{jobdata}->{owner},
+		auth => $job->{auth},
+	});
 }
-
-#Exporting model
-my $modeldata = $fbaserv->export_fbamodel({
-	model => "Seed".$job->{jobdata}->{genome},
-	workspace => $job->{jobdata}->{owner},
-	format => "modelseed",
-	auth => $job->{auth},
-});
-my $lines = [split(/\n/,$modeldata)];
-open($fh, ">", $filename."model.mdl") || return;
-open(my $fhb, ">", $filename."biomass.bof") || return;
-my $bio = 0;
-for (my $i=0; $i < @{$lines};$i++) {
-	if ($lines->[$i] =~ m/NAME\t/) {
-		$bio = 1;
-	}
-	if ($bio == 1) {
-		print $fhb $lines->[$i]."\n";
-	} else {
-		print $fh $lines->[$i]."\n";
-	}
-}
-close($fh);
-close($fhb);
-
-#Importing model
-my $cmd = "perl /homes/chenry/Model-SEED-core/bin/ModelDriver.pl mdlloadmodel Seed".$job->{jobdata}->{genome}.
-	"?".$job->{jobdata}->{genome}.
-	"?0?".$filename."model.mdl".
-	"?".$filename."biomass.bof".
-	"?".$job->{jobdata}->{owner}.
-	"?0?1";
-open($fh, ">", $filename."loadmodel.sh") || return;
-print $fh "source /home/chenry/FIGdisk/config/fig-user-env.sh\nsource /homes/chenry/Model-SEED-core/bin/source-me.sh\n".$cmd."\n";
-close($fh);
-chmod 0777, $filename."loadmodel.sh";
-system($filename."loadmodel.sh > ".$filename."loadmodel.out");
 
 1;
