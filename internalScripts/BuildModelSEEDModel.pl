@@ -98,5 +98,11 @@ if (!defined($objmeta)) {
 		auth => $job->{auth},
 	});
 }
+$wserv->set_job_status({
+	auth => $job->{auth},
+	jobid => $job->{id},
+	currentStatus => "running",
+	status => "modelbuilt"
+});
 
 1;
