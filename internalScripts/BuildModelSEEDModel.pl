@@ -106,7 +106,7 @@ $wserv->set_job_status({
 	auth => $job->{auth},
 	jobid => $job->{id},
 	currentStatus => "running",
-	status => "modelbuilt"
+	status => "done"
 });
 
 1;
