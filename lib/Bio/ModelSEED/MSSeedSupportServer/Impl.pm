@@ -160,7 +160,7 @@ sub _updateModel {
 		$statement .= "VALUES ('".$data->{source}."','".$data->{public}."','".$data->{status}."','".$data->{autocompleteDate}."','".$data->{builtDate}."','".
 			$data->{spontaneousReactions}."','".$data->{gapFillReactions}."','".$data->{associatedGenes}."','".$data->{genome}."','".
 			$data->{reactions}."','".$data->{modificationDate}."','".$data->{id}."','".$data->{biologReactions}."','".
-			$data->{owner}.",'".$data->{autoCompleteMedia}."','".$data->{transporters}."','".$data->{version}."','".
+			$data->{owner}."','".$data->{autoCompleteMedia}."','".$data->{transporters}."','".$data->{version}."','".
 			$data->{autoCompleteReactions}."','".$data->{compounds}."','".$data->{autoCompleteTime}."','".$data->{message}."','".
 			$data->{associatedSubsystemGenes}."','".$data->{autocompleteVersion}."','".$data->{cellwalltype}."','".$data->{biomassReaction}."','".
 			$data->{growth}."','".$data->{noGrowthCompounds}."','".$data->{autocompletionDualityGap}."','".$data->{autocompletionObjective}."','".
