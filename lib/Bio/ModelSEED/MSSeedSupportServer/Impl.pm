@@ -206,7 +206,7 @@ sub _getBiomassID {
 		my $statement = "UPDATE ModelDB.CURRENTID SET id = '".($currid+1)."' WHERE id = '".$currid."' AND object = 'bof';";
     	print $statement."\n\n";
 		$currids  = $db->do($statement);
-    	if (@{$currids} == 1) {
+    	if ($currids == 1) {
     		$continue = 0;
     	}
 	};
