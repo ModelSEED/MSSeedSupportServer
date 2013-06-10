@@ -33,6 +33,10 @@ if (-e $ARGV[0]) {
 	$job->{auth} = $ARGV[3];
 	$job->{accounttype} = $ARGV[4];
 }
+
+$job->{jobdata}->{owner} =~ s/\./_DOT_/g;
+$job->{jobdata}->{owner} =~ s/\@/_AT_/g;
+
 $Bio::KBase::fbaModelServices::Server::CallContext = {};
 my $wserv = Bio::KBase::workspaceService::Client->new($job->{wsurl});
 my $fbaserv = Bio::KBase::fbaModelServices::Impl->new({accounttype => $job->{accounttype},"workspace-url" => $job->{wsurl}});
