@@ -168,7 +168,7 @@ sub _updateModel {
 		print $statement."\n\n";
 		$mdls  = $db->do($statement);
     } else {
-       	my $statement = "UPDATE ModelDB.MODEL SET 'source = '".$data->{source}."',";
+       	my $statement = "UPDATE ModelDB.MODEL SET source = '".$data->{source}."',";
 		$statement .= "public = '".$data->{public}."',";
 		$statement .= "status = '".$data->{status}."',";
 		$statement .= "autocompleteDate = '".$data->{autocompleteDate}."',";
@@ -293,14 +293,14 @@ sub _addBiomass {
 		$statement .= "modificationDate = '".time()."',";
 		$statement .= "creationDate = '".time()."',";
 		$statement .= "id = '".$bioid."',";
-		$statement .= "cofactorPackage = 'NONE' ";
+		$statement .= "cofactorPackage = 'NONE',";
 		$statement .= "lipidPackage = 'NONE',";
 		$statement .= "cellWallPackage = 'NONE',";
 		$statement .= "protein = '0.5284',";
 		$statement .= "DNA = '0.026',";
 		$statement .= "RNA = '0.0655',";
 		$statement .= "lipid = '0.075',";
-		$statement .= "cellWall = '0.25' ";
+		$statement .= "cellWall = '0.25',";
 		$statement .= "cofactor = '0.1',";
 		$statement .= "DNACoef = 'NONE',";
 		$statement .= "RNACoef = 'NONE',";
