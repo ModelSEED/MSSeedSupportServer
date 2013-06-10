@@ -33,7 +33,7 @@ if (-e $ARGV[0]) {
 	$job->{auth} = $ARGV[3];
 	$job->{accounttype} = $ARGV[4];
 }
-my Bio::KBase::fbaModelServices::Server::CallContext = {};
+my $Bio::KBase::fbaModelServices::Server::CallContext = {};
 my $wserv = Bio::KBase::workspaceService::Client->new($job->{wsurl});
 my $fbaserv = Bio::KBase::fbaModelServices::Impl->new({accounttype => $job->{accounttype},"workspace-url" => $job->{wsurl}});
 
@@ -64,7 +64,7 @@ if (!defined($wsmeta)) {
 #	});
 #};
 #if (!defined($objmeta)) {
-	Bio::KBase::fbaModelServices::Server::CallContext = {};
+	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->genome_to_workspace({
 		genome => $job->{jobdata}->{genome},
 		workspace => $job->{jobdata}->{owner},
@@ -87,14 +87,14 @@ if (!defined($wsmeta)) {
 #	});
 #};
 #if (!defined($objmeta)) {
-	Bio::KBase::fbaModelServices::Server::CallContext = {};
+	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->genome_to_fbamodel({
 		genome => $job->{jobdata}->{genome},
 		workspace => $job->{jobdata}->{owner},
 		model => "Seed".$job->{jobdata}->{genome},
 		auth => $job->{auth},
 	});
-	Bio::KBase::fbaModelServices::Server::CallContext = {};
+	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->queue_gapfill_model({
 		model => "Seed".$job->{jobdata}->{genome},
 		integrate_solution => 1,
