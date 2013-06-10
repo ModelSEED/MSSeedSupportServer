@@ -106,7 +106,8 @@ $wserv->set_job_status({
 	auth => $job->{auth},
 	jobid => $job->{id},
 	currentStatus => "running",
-	status => "done"
+	status => "done",
+	jobdata => {error => "",status => "GapfillingQueue"}
 });
 
 1;
