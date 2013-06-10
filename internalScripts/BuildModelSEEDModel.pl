@@ -53,16 +53,16 @@ if (!defined($wsmeta)) {
 }
 
 #Loading the genome if needed
-my $objmeta;
-eval {
-	$objmeta = $wserv->get_objectmeta({
-		id => $job->{jobdata}->{genome},
-		type => "Genome",
-		workspace => $job->{jobdata}->{owner},
-		auth => $job->{auth},
-	});
-};
-if (!defined($objmeta)) {
+#my $objmeta;
+#eval {
+#	$objmeta = $wserv->get_objectmeta({
+#		id => $job->{jobdata}->{genome},
+#		type => "Genome",
+#		workspace => $job->{jobdata}->{owner},
+#		auth => $job->{auth},
+#	});
+#};
+#if (!defined($objmeta)) {
 	$Bio::KBase::fbaModelServices::Server::CallContext = {}
 	$fbaserv->genome_to_workspace({
 		genome => $job->{jobdata}->{genome},
@@ -73,19 +73,19 @@ if (!defined($objmeta)) {
 		auth => $job->{auth},
 		overwrite => 1
 	});
-}
+#}
 
 #Building model for genome
-$objmeta = undef;
-eval {
-	$objmeta = $wserv->get_objectmeta({
-		id => "Seed".$job->{jobdata}->{genome},
-		type => "Model",
-		workspace => $job->{jobdata}->{owner},
-		auth => $job->{auth},
-	});
-};
-if (!defined($objmeta)) {\
+#$objmeta = undef;
+#eval {
+#	$objmeta = $wserv->get_objectmeta({
+#		id => "Seed".$job->{jobdata}->{genome},
+#		type => "Model",
+#		workspace => $job->{jobdata}->{owner},
+#		auth => $job->{auth},
+#	});
+#};
+#if (!defined($objmeta)) {
 	$Bio::KBase::fbaModelServices::Server::CallContext = {}
 	$fbaserv->genome_to_fbamodel({
 		genome => $job->{jobdata}->{genome},
@@ -100,7 +100,7 @@ if (!defined($objmeta)) {\
 		workspace => $job->{jobdata}->{owner},
 		auth => $job->{auth},
 	});
-}
+#}
 $wserv->set_job_status({
 	auth => $job->{auth},
 	jobid => $job->{id},
