@@ -19,7 +19,6 @@ my $job;
 if (-e $ARGV[0]) {
 	my $filename = $ARGV[0];
 	open( my $fh, "<", $filename."jobfile.json");
-	my $job;
 	{
 	    local $/;
 	    my $str = <$fh>;
