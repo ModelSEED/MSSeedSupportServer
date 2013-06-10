@@ -89,43 +89,53 @@ sub _authenticate_user {
 	};
 }
 
-sub _addReaction {
-	my ($self,$model,$rxn,$dir,$comp,$pegs) = @_;
-	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","root");
-	my $select = "SELECT * FROM REACTION_MODEL WHERE REACTION = ? AND MODEL = ?";
-	my $rxns = $db->selectall_arrayref($select, { Slice => {MODEL => 1} }, ($model,$rxn));
-	if (!defined($rxns) || defined($rxns->[0])) {
-		$select = "INSERT INTO REACTION_MODEL ('directionality','compartment','REACTION','MODEL','pegs','confidence','reference','notes') ";
-		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE');";
-		my $rxnmdls  = $db->do($select);
-	} else {
-		$select = "UPDATE REACTION_MODEL SET 'directionality' = '".$dir."',";
-		$select .= "'compartment' = '".$comp."',";
-		$select .= "'REACTION' = '".$rxn."',";
-		$select .= "'MODEL' = '".$model."',";
-		$select .= "'pegs' = '".$pegs."',";
-		$select .= "'confidence' = '3',";
-		$select .= "'reference' = 'NONE',";
-		$select .= "'notes' = 'NONE' ";
-		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."';";
-		my $rxnmdls  = $db->do($select);
+sub _clearReactions {
+	my ($self,$db,$model) = @_;
+	if ($model !~ m/^Seed\d+/) {
+		return;
 	}
-	$db->disconnect;
+	my $statement = "DELETE FROM ModelDB.REACTION_MODEL WHERE MODEL = '".$model."';";
+	print $statement."\n\n";
+	my $rxns  = $db->do($statement);
+}
+
+sub _addReaction {
+	my ($self,$db,$model,$rxn,$dir,$comp,$pegs) = @_;
+	my $select = "SELECT * FROM ModelDB.REACTION_MODEL WHERE REACTION = ? AND MODEL = ?";
+	my $rxns = $db->selectall_arrayref($select, { Slice => {MODEL => 1} }, ($model,$rxn));
+	if (!defined($rxns) || !defined($rxns->[0]->{REACTION})) {
+		$select = "INSERT INTO ModelDB.REACTION_MODEL (directionality,compartment,REACTION,MODEL,pegs,confidence,reference,notes) ";
+		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE');";
+		print $select."\n\n";
+		$rxns  = $db->do($select);
+	} else {
+		$select = "UPDATE ModelDB.REACTION_MODEL SET directionality = '".$dir."',";
+		$select .= "compartment = '".$comp."',";
+		$select .= "REACTION = '".$rxn."',";
+		$select .= "MODEL = '".$model."',";
+		$select .= "pegs = '".$pegs."',";
+		$select .= "confidence = '3',";
+		$select .= "reference = 'NONE',";
+		$select .= "notes = 'NONE' ";
+		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."';";
+		print $select."\n\n";
+		$rxns  = $db->do($select);
+	}
 }
 
 sub _updateGenome {
-	my ($self,$data) = @_;
-    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306", "root");
-	my $select = "SELECT * FROM GENOMESTATS WHERE GENOME = ?";
-	my $bios = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
-	if (!defined($bios) || scalar $bios == 0) {        
-        my $statement = "INSERT INTO GENOMESTATS ('genesInSubsystems','owner','source','genes','GENOME','name','taxonomy',".
+	my ($self,$db,$data) = @_;
+    my $select = "SELECT * FROM ModelDB.GENOMESTATS WHERE GENOME = ?";
+	my $genomes = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
+	if (!defined($genomes) || !defined($genomes->[0]->{id})) {        
+        my $statement = "INSERT INTO ModelDB.GENOMESTATS ('genesInSubsystems','owner','source','genes','GENOME','name','taxonomy',".
         	"'gramNegGenes','size','gramPosGenes','public','genesWithFunctions','class','gcContent') ";
 		$statement .= "VALUES ('".$data->{genesInSubsystems}."','".$data->{owner}."','".$data->{source}."','".$data->{genes}."','".$data->{id}."','".
 			$data->{name}."','".$data->{taxonomy}."');";
-		$bios  = $db->do($statement);
+		print $statement."\n\n";
+		$genomes  = $db->do($statement);
     } else {
-       	my $statement = "UPDATE GENOMESTATS SET 'genesInSubsystems' = '".$data->{genesInSubsystems}."',";
+       	my $statement = "UPDATE ModelDB.GENOMESTATS SET 'genesInSubsystems' = '".$data->{genesInSubsystems}."',";
 		$statement .= "'owner' = '".$data->{owner}."',";
 		$statement .= "'source' = '".$data->{source}."',";
 		$statement .= "'genes' = '".$data->{genes}."',";
@@ -133,21 +143,20 @@ sub _updateGenome {
 		$statement .= "'name' = '".$data->{name}."',";
 		$statement .= "'taxonomy' = '".$data->{taxonomy}."'";
 		$statement .= " WHERE GENOME = '".$data->{id}."';";
-		$bios  = $db->do($statement);
+		print $statement."\n\n";
+		$genomes  = $db->do($statement);
     }
-    $db->disconnect;
 }
 
 sub _updateModel {
-	my ($self,$data) = @_;
-    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306", "root");
-	my $select = "SELECT * FROM MODEL WHERE id = ?";
-	my $bios = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
-	if (!defined($bios) || scalar $bios == 0) {
-        my $statement = "INSERT INTO MODEL ('source','public','status','autocompleteDate','builtDate','spontaneousReactions','gapFillReactions',".
-        "'associatedGenes','genome','reactions','modificationDate','id','biologReactions','owner','autoCompleteMedia','transporters','version',".
-        "'autoCompleteReactions','compounds','autoCompleteTime','message','associatedSubsystemGenes','autocompleteVersion','cellwalltype',".
-        "'biomassReaction','growth','noGrowthCompounds','autocompletionDualityGap','autocompletionObjective','name','defaultStudyMedia') ";
+	my ($self,$db,$data) = @_;
+	my $select = "SELECT * FROM ModelDB.MODEL WHERE id = ?";
+	my $mdls = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
+	if (!defined($mdls) || !defined($mdls->[0]->{id})) {
+        my $statement = "INSERT INTO ModelDB.MODEL (source,public,status,autocompleteDate,builtDate,spontaneousReactions,gapFillReactions,".
+        "associatedGenes,genome,reactions,modificationDate,id,biologReactions,owner,autoCompleteMedia,transporters,version,".
+        "autoCompleteReactions,compounds,autoCompleteTime,message,associatedSubsystemGenes,autocompleteVersion,cellwalltype,".
+        "biomassReaction,growth,noGrowthCompounds,autocompletionDualityGap,autocompletionObjective,name,defaultStudyMedia) ";
 		$statement .= "VALUES ('".$data->{source}."','".$data->{public}."','".$data->{status}."','".$data->{autocompleteDate}."','".$data->{builtDate}."','".
 			$data->{spontaneousReactions}."','".$data->{gapFillReactions}."','".$data->{associatedGenes}."','".$data->{genome}."','".
 			$data->{reactions}."','".$data->{modificationDate}."','".$data->{id}."','".$data->{biologReactions}."','".
@@ -156,60 +165,60 @@ sub _updateModel {
 			$data->{associatedSubsystemGenes}."','".$data->{autocompleteVersion}."','".$data->{cellwalltype}."','".$data->{biomassReaction}."','".
 			$data->{growth}."','".$data->{noGrowthCompounds}."','".$data->{autocompletionDualityGap}."','".$data->{autocompletionObjective}."','".
 			$data->{name}."','".$data->{defaultStudyMedia}."');";
-		$bios  = $db->do($statement);
+		print $statement."\n\n";
+		$mdls  = $db->do($statement);
     } else {
-       	my $statement = "UPDATE BIOMASS SET 'source' = '".$data->{source}."',";
-		$statement .= "'public' = '".$data->{public}."',";
-		$statement .= "'status' = '".$data->{status}."',";
-		$statement .= "'autocompleteDate' = '".$data->{autocompleteDate}."',";
-		$statement .= "'builtDate' = '".$data->{builtDate}."',";
-		$statement .= "'spontaneousReactions' = '".$data->{spontaneousReactions}."',";
-		$statement .= "'gapFillReactions' = '".$data->{gapFillReactions}."',";
-		$statement .= "'associatedGenes' = '".$data->{associatedGenes}."',";
-		$statement .= "'reactions' = '".$data->{reactions}."',";
-		$statement .= "'modificationDate' = '".$data->{modificationDate}."',";
-		$statement .= "'id' = '".$data->{id}."',";
-		$statement .= "'biologReactions' = '".$data->{biologReactions}."',";
-		$statement .= "'autoCompleteMedia' = '".$data->{autoCompleteMedia}."',";
-		$statement .= "'cellwalltype' = '".$data->{cellwalltype}."',";
-		$statement .= "'biomassReaction' = '".$data->{biomassReaction}."',";
-		$statement .= "'growth' = '".$data->{growth}."',";
-		$statement .= "'noGrowthCompounds' = '".$data->{noGrowthCompounds}."',";
-		$statement .= "'autocompletionDualityGap' = '".$data->{autocompletionDualityGap}."',";
-		$statement .= "'autocompletionObjective' = '".$data->{autocompletionObjective}."',";
-		$statement .= "'name' = '".$data->{name}."',";
-		$statement .= "'defaultStudyMedia' = '".$data->{defaultStudyMedia}."'";
+       	my $statement = "UPDATE ModelDB.MODEL SET 'source = '".$data->{source}."',";
+		$statement .= "public = '".$data->{public}."',";
+		$statement .= "status = '".$data->{status}."',";
+		$statement .= "autocompleteDate = '".$data->{autocompleteDate}."',";
+		$statement .= "builtDate = '".$data->{builtDate}."',";
+		$statement .= "spontaneousReactions = '".$data->{spontaneousReactions}."',";
+		$statement .= "gapFillReactions = '".$data->{gapFillReactions}."',";
+		$statement .= "associatedGenes = '".$data->{associatedGenes}."',";
+		$statement .= "reactions = '".$data->{reactions}."',";
+		$statement .= "modificationDate = '".$data->{modificationDate}."',";
+		$statement .= "id = '".$data->{id}."',";
+		$statement .= "biologReactions = '".$data->{biologReactions}."',";
+		$statement .= "autoCompleteMedia = '".$data->{autoCompleteMedia}."',";
+		$statement .= "cellwalltype = '".$data->{cellwalltype}."',";
+		$statement .= "biomassReaction = '".$data->{biomassReaction}."',";
+		$statement .= "growth = '".$data->{growth}."',";
+		$statement .= "noGrowthCompounds = '".$data->{noGrowthCompounds}."',";
+		$statement .= "autocompletionDualityGap = '".$data->{autocompletionDualityGap}."',";
+		$statement .= "autocompletionObjective = '".$data->{autocompletionObjective}."',";
+		$statement .= "name = '".$data->{name}."',";
+		$statement .= "defaultStudyMedia = '".$data->{defaultStudyMedia}."'";
 		$statement .= " WHERE id = '".$data->{id}."';";
-		$bios  = $db->do($statement);
+		print $statement."\n\n";
+		$mdls  = $db->do($statement);
     }
-    $db->disconnect;
 }
 
 sub _getBiomassID {
-	my ($self) = @_;
-	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","root");
+	my ($self,$db) = @_;
 	my $continue = 1;
 	my $currid;
 	while ($continue == 1) {
-		my $select = "SELECT * FROM CURRENTID WHERE object = ?";
+		my $select = "SELECT * FROM ModelDB.CURRENTID WHERE object = ?";
 		my $currids = $db->selectall_arrayref($select, { Slice => {id => 1} }, "bof");
 		$currid = $currids->[0]->{id};
-		my $statement = "UPDATE CURRENTID SET 'id' = '".($currid+1)."' WHERE 'id' = '".$currid."' AND 'object' = 'bof';";
-    	my $currids  = $db->do($statement);
+		my $statement = "UPDATE ModelDB.CURRENTID SET id = '".($currid+1)."' WHERE id = '".$currid."' AND object = 'bof';";
+    	print $statement."\n\n";
+		$currids  = $db->do($statement);
     	if (@{$currids} == 1) {
-    		$continue = 1;
+    		$continue = 0;
     	}
 	};
-	$db->disconnect;
+	$currid = "bio".$currid;
 	return $currid;
 }
 
 sub _getModelData {
-	my ($self,$owner,$genome) = @_;
+	my ($self,$db,$owner,$genome) = @_;
 	my $userobj = $self->_getUserObj($owner);
 	my $modelid = "Seed".$genome.".".$userobj->{_id};
-	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","root");
-	my $select = "SELECT * FROM MODEL WHERE id = ?";
+	my $select = "SELECT * FROM ModelDB.MODEL WHERE id = ?";
 	my $models = $db->selectall_arrayref($select, { Slice => {
 		_id => 1,
 		source => 1,
@@ -244,53 +253,69 @@ sub _getModelData {
 		name => 1,
 		defaultStudyMedia => 1,
 	} }, $modelid);
-	if (!defined($models) || scalar $models == 0) {
-        return undef;
+	if (!defined($models) || !defined($models->[0]->{id})) {
+        return {
+        	id => $modelid,
+        	source => "Unknown",
+        	public => 0,
+			name => "Unknown",
+			genome => $genome,
+			owner => $owner   	
+        };
     }
-	$db->disconnect;
+    if (!defined($models->[0]->{id})) {
+    	$models->[0] = {
+        	id => $modelid,
+        	source => "Unknown",
+        	public => 0,
+			name => "Unknown",
+			genome => $genome,
+			owner => $owner    	
+        };
+    }
 	return $models->[0];
 }
 
 sub _addBiomass {
-	my ($self,$owner,$genome,$equation,$bioid) = @_;
-    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306", "root");
-	my $select = "SELECT * FROM BIOMASS WHERE id = ?";
+	my ($self,$db,$owner,$genome,$equation,$bioid) = @_;
+	my $select = "SELECT * FROM ModelDB.BIOMASS WHERE id = ?";
 	my $bios = $db->selectall_arrayref($select, { Slice => {id => 1}}, $bioid);
-	if (!defined($bios) || scalar $bios == 0) {
-        my $statement = "INSERT INTO BIOMASS ('owner','name','public','equation','modificationDate','creationDate','id','cofactorPackage','lipidPackage','cellWallPackage','protein','DNA','RNA','lipid','cellWall','cofactor','DNACoef','RNACoef','proteinCoef','lipidCoef','cellWallCoef','cofactorCoef','essentialRxn','energy','unknownPackage','unknownCoef') ";
+	if (!defined($bios) || !defined($bios->[0]->{id})) {
+        my $statement = "INSERT INTO ModelDB.BIOMASS (owner,name,public,equation,modificationDate,creationDate,id,cofactorPackage,lipidPackage,cellWallPackage,protein,DNA,RNA,lipid,cellWall,cofactor,DNACoef,RNACoef,proteinCoef,lipidCoef,cellWallCoef,cofactorCoef,essentialRxn,energy,unknownPackage,unknownCoef) ";
 		$statement .= "VALUES ('".$owner."','".$bioid."','0','".$equation."','".time()."','".time()."','".$bioid."','NONE','NONE','NONE','0.5284','0.026','0.0655','0.075','0.25','0.1','NONE','NONE','NONE','NONE','NONE','NONE','NONE','40','NONE','NONE');";
+		print $statement."\n\n";
 		$bios  = $db->do($statement);
     } else {
-       	my $statement = "UPDATE BIOMASS SET 'owner' = '".$owner."',";
-		$statement .= "'name' = '".$bioid."',";
-		$statement .= "'public' = '0',";
-		$statement .= "'equation' = '".$equation."',";
-		$statement .= "'modificationDate' = '".time()."',";
-		$statement .= "'creationDate' = '".time()."',";
-		$statement .= "'id' = '".$bioid."',";
-		$statement .= "'cofactorPackage' = 'NONE' ";
-		$statement .= "'lipidPackage' = 'NONE',";
-		$statement .= "'cellWallPackage' = 'NONE',";
-		$statement .= "'protein' = '0.5284',";
-		$statement .= "'DNA' = '0.026',";
-		$statement .= "'RNA' = '0.0655',";
-		$statement .= "'lipid' = '0.075',";
-		$statement .= "'cellWall' = '0.25' ";
-		$statement .= "'cofactor' = '0.1',";
-		$statement .= "'DNACoef' = 'NONE',";
-		$statement .= "'RNACoef' = 'NONE',";
-		$statement .= "'proteinCoef' = 'NONE',";
-		$statement .= "'lipidCoef' = 'NONE',";
-		$statement .= "'cellWallCoef' = 'NONE',";
-		$statement .= "'cofactorCoef' = 'NONE',";
-		$statement .= "'essentialRxn' = 'NONE',";
-		$statement .= "'energy' = 'NONE',";
-		$statement .= "'unknownPackage' = '40',";
-		$statement .= "'unknownCoef' = 'NONE'";
+       	my $statement = "UPDATE ModelDB.BIOMASS SET owner = '".$owner."',";
+		$statement .= "name = '".$bioid."',";
+		$statement .= "public = '0',";
+		$statement .= "equation = '".$equation."',";
+		$statement .= "modificationDate = '".time()."',";
+		$statement .= "creationDate = '".time()."',";
+		$statement .= "id = '".$bioid."',";
+		$statement .= "cofactorPackage = 'NONE' ";
+		$statement .= "lipidPackage = 'NONE',";
+		$statement .= "cellWallPackage = 'NONE',";
+		$statement .= "protein = '0.5284',";
+		$statement .= "DNA = '0.026',";
+		$statement .= "RNA = '0.0655',";
+		$statement .= "lipid = '0.075',";
+		$statement .= "cellWall = '0.25' ";
+		$statement .= "cofactor = '0.1',";
+		$statement .= "DNACoef = 'NONE',";
+		$statement .= "RNACoef = 'NONE',";
+		$statement .= "proteinCoef = 'NONE',";
+		$statement .= "lipidCoef = 'NONE',";
+		$statement .= "cellWallCoef = 'NONE',";
+		$statement .= "cofactorCoef = 'NONE',";
+		$statement .= "essentialRxn = 'NONE',";
+		$statement .= "energy = 'NONE',";
+		$statement .= "unknownPackage = '40',";
+		$statement .= "unknownCoef = 'NONE'";
 		$statement .= " WHERE id = '".$bioid."';";
+		print $statement."\n\n";
 		$bios  = $db->do($statement);
     }
-	$db->disconnect;
 }
 
 sub _webapp_db_connect {
@@ -357,7 +382,7 @@ sub _get_rast_job_data {
         directory => "/vol/public-pseed/FIGdisk/FIG/Data/Organisms/".$genome,
         source => "TEMPPUBSEED"
     };
-    if (-d "/vol/public-pseed/FIGdisk/FIG/Data/Organisms/".$genome) {
+    if (-d "/vol/public-pseed/FIGdisk/FIG/Data/Organisms/".$genome."/") {
         return $output;
 	}
     my $job = $self->_get_rast_job($genome,1);
@@ -592,7 +617,7 @@ sub getRastGenomeData
 		getSequences => 0,
 		getDNASequence => 0
 	});
-    my $output = {
+    $output = {
         features => [],
 		gc => 0.5,
 		genome => $params->{genome},
@@ -915,30 +940,41 @@ sub load_model_to_modelseed
     my($success);
     #BEGIN load_model_to_modelseed
     $self->_setContext($params);
-    $params = $self->_validateargs($params,["genome","owner","reactions","biomass","cellwalltype"],{});
+    $params = $self->_validateargs($params,["genome","owner","reactions","biomass","cellwalltype","status"],{});
     #Getting model data
-    my $data = $self->_getModelData($params->{owner},$params->{genome}->{id});
-    $data->{status} = 1;
+    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+    my $data = $self->_getModelData($db,$params->{owner},$params->{genome}->{id});
+    $data->{status} = $params->{status};
     $data->{spontaneousReactions} = 0;
-    $data->{gapfillReactions} = 0;
+    $data->{defaultStudyMedia} = "Complete";
+    $data->{autoCompleteMedia} = "Complete";
+    $data->{autocompletionObjective} = -1;
+    $data->{autocompletionDualityGap} = -1;
+    $data->{noGrowthCompounds} = "NONE";
+    $data->{builtDate} = time();
+    $data->{modificationDate} = time();
+    $data->{autocompleteDate} = -1;
+    $data->{gapFillReactions} = 0;
     $data->{associatedGenes} = 0;
     $data->{reactions} = 0;
     $data->{biologReactions} = 0;
     $data->{transporters} = 0;
     $data->{autoCompleteReactions} = 0;
+    $data->{autocompleteVersion} = 0;
+    $data->{autoCompleteTime} = -1;
+    $data->{version} = 0;
     $data->{compounds} = 0;
     $data->{message} = "Model reconstruction complete";
     $data->{associatedSubsystemGenes} = 0;
     $data->{cellwalltype} = $params->{cellwalltype};
     $data->{growth} = 0;
     #Updating the biomass table
-    my $bioid = $data->{biomass};
-    if ($bioid eq "NONE") {
-    	$bioid = $self->_getBiomassID();
-    	$data->{biomass} = $bioid;
+    my $bioid = $data->{biomassReaction};
+    if (!defined($bioid) || $bioid eq "NONE") {
+    	$bioid = $self->_getBiomassID($db);
+    	$data->{biomassReaction} = $bioid;
     }
-    $bioid = $self->_addBiomass($params->{owner},$params->{genome}->{id},$params->{biomass},$bioid);
-    $data->{biomassReaction} = $bioid;
+    $self->_addBiomass($db,$params->{owner},$params->{genome}->{id},$params->{biomass},$bioid);
     #Updating the rxnmdl table
     my $cpdhash = {};
     my $genehash = {};
@@ -961,9 +997,11 @@ sub load_model_to_modelseed
     	rxn02916 => 1,
     	rxn05667 => 1
     };
-    for (my $i=0; $i < @{$params->{reactions}};$i++) {
+    $self->_clearReactions($db,$data->{id});
+    #for (my $i=0; $i < @{$params->{reactions}};$i++) {
+    for (my $i=0; $i < 5;$i++) {
     	my $rxn = $params->{reactions}->[$i];
-    	$self->_addReaction($data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs});
+    	$self->_addReaction($db,$data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs});
     	$data->{reactions}++;
     	if (defined($spontenous->{$rxn->{id}})) {
     		$data->{spontaneousReactions}++;
@@ -972,13 +1010,13 @@ sub load_model_to_modelseed
     	} else {
 	    	$_ = $rxn->{pegs};
 			my @array = /(peg\.\d+)/g;
-	    	for (my $j=0; $j < @array; $i++) {
-	    		$genehash->{$array[$i]} = 1;
+	    	for (my $j=0; $j < @array; $j++) {
+	    		$genehash->{$array[$j]} = 1;
 	    	}
 	    	$_ = $rxn->{equation};
 	    	@array = /(cpd\d+)/g;
-	    	for (my $j=0; $j < @array; $i++) {
-	    		$cpdhash->{$array[$i]} = 1;
+	    	for (my $j=0; $j < @array; $j++) {
+	    		$cpdhash->{$array[$j]} = 1;
 	    	}
     	}
     	if ($rxn->{equation} =~ m/e0/) {
@@ -987,11 +1025,12 @@ sub load_model_to_modelseed
     }
     $data->{associatedGenes} = keys(%{$genehash});
     $data->{compounds} = keys(%{$cpdhash});
-    $self->_addReaction($data->{id},$bioid,"=>","c","BOF");
+    $self->_addReaction($db,$data->{id},$bioid,"=>","c","BOF");
     #Updating the model table
     #$self->_updateGenome($params->{genome});
-    $self->_updateModel($data);
+    $self->_updateModel($db,$data);
     $success = 1;
+    $db->disconnect();
     #END load_model_to_modelseed
     my @_bad_returns;
     (!ref($success)) or push(@_bad_returns, "Invalid type for return variable \"success\" (value was \"$success\")");

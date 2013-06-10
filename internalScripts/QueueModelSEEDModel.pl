@@ -12,6 +12,16 @@ use Bio::KBase::workspaceService::Client;
 
 my $wserv = Bio::KBase::workspaceService::Client->new("http://bio-data-1.mcs.anl.gov/services/ms_workspace");
 
+for (my $i=7; $i < 2668;$i++) {
+	$wserv->set_job_status({
+		auth => "chenry Ko3BA9yMnMj2k",
+		jobid => "job.".$i,
+		currentStatus => "error",
+		status => "queued",
+		jobdata => {error => ""}
+	});
+}
+
 if (!defined($ARGV[0])) {
 	exit(0);
 }
