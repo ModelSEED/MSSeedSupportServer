@@ -63,7 +63,7 @@ if (!defined($wsmeta)) {
 #	});
 #};
 #if (!defined($objmeta)) {
-	$Bio::KBase::fbaModelServices::Server::CallContext = {}
+	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->genome_to_workspace({
 		genome => $job->{jobdata}->{genome},
 		workspace => $job->{jobdata}->{owner},
@@ -86,14 +86,14 @@ if (!defined($wsmeta)) {
 #	});
 #};
 #if (!defined($objmeta)) {
-	$Bio::KBase::fbaModelServices::Server::CallContext = {}
+	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->genome_to_fbamodel({
 		genome => $job->{jobdata}->{genome},
 		workspace => $job->{jobdata}->{owner},
 		model => "Seed".$job->{jobdata}->{genome},
 		auth => $job->{auth},
 	});
-	$Bio::KBase::fbaModelServices::Server::CallContext = {}
+	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->queue_gapfill_model({
 		model => "Seed".$job->{jobdata}->{genome},
 		integrate_solution => 1,
