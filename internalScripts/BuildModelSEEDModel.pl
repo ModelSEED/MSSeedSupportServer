@@ -58,16 +58,16 @@ if (!defined($wsmeta)) {
 }
 
 #Loading the genome if needed
-#my $objmeta;
-#eval {
-#	$objmeta = $wserv->get_objectmeta({
-#		id => $job->{jobdata}->{genome},
-#		type => "Genome",
-#		workspace => $job->{jobdata}->{owner},
-#		auth => $job->{auth},
-#	});
-#};
-#if (!defined($objmeta)) {
+my $objmeta;
+eval {
+	$objmeta = $wserv->get_objectmeta({
+		id => $job->{jobdata}->{genome},
+		type => "Genome",
+		workspace => "PubSEEDGenomes",
+		auth => $job->{auth},
+	});
+};
+if (!defined($objmeta)) {
 	$Bio::KBase::fbaModelServices::Server::CallContext = {};
 	$fbaserv->genome_to_workspace({
 		genome => $job->{jobdata}->{genome},
@@ -78,7 +78,16 @@ if (!defined($wsmeta)) {
 		auth => $job->{auth},
 		overwrite => 1
 	});
-#}
+} else {
+	$wserv->copy_object({
+		source_workspace => "PubSEEDGenomes",
+		new_workspace => $job->{jobdata}->{owner},
+		source_id => $job->{jobdata}->{genome},
+		new_id => $job->{jobdata}->{genome},
+		type => "Genome",
+		auth => $job->{auth}
+	});
+}
 
 #Building model for genome
 #$objmeta = undef;
