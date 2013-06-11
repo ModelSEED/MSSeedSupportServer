@@ -91,7 +91,7 @@ sub _authenticate_user {
 
 sub _clearBiomass {
 	my ($self,$db,$bioid) = @_;
-	if ($model !~ m/^Seed\d+/) {
+	if ($bioid !~ m/^bio\d+/) {
 		return;
 	}
 	my $statement = "DELETE FROM ModelDB.COMPOUND_BIOMASS WHERE BIOMASS = '".$bioid."';";
@@ -102,12 +102,12 @@ sub _clearBiomass {
 sub _addBiomassCompound {
 	my ($self,$db,$bioid,$cpd,$coef,$comp,$cat) = @_;
 	my $select = "SELECT * FROM ModelDB.COMPOUND_BIOMASS WHERE BIOMASS = ? AND COMPOUND = ?";
-	my $cpds = $db->selectall_arrayref($select, { Slice => {COMPOUND => 1} }, ($model,$cpd));
+	my $cpds = $db->selectall_arrayref($select, { Slice => {COMPOUND => 1} }, ($bioid,$cpd));
 	if (!defined($cpds) || !defined($cpds->[0]->{COMPOUND})) {
 		$select = "INSERT INTO ModelDB.COMPOUND_BIOMASS (BIOMASS,compartment,COMPOUND,coefficient,category) ";
 		$select .= "VALUES ('".$bioid."','".$comp."','".$cpd."','".$coef."','".$cat."');";
 		print $select."\n\n";
-		$rxns  = $db->do($select);
+		$cpds  = $db->do($select);
 	} else {
 		$select = "UPDATE ModelDB.COMPOUND_BIOMASS SET BIOMASS = '".$bioid."',";
 		$select .= "compartment = '".$comp."',";
@@ -116,7 +116,7 @@ sub _addBiomassCompound {
 		$select .= "category = '".$cat."'";
 		$select .= " WHERE BIOMASS = '".$bioid."' AND COMPOUND = '".$cpd."';";
 		print $select."\n\n";
-		$rxns  = $db->do($select);
+		$cpds  = $db->do($select);
 	}
 }
 
