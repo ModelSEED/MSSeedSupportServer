@@ -1107,7 +1107,7 @@ sub load_model_to_modelseed
     $data->{compounds} = keys(%{$cpdhash});
     $self->_addReaction($db,$data->{id},$bioid,"=>","c","BOF");
     #Updating the model table
-    $self->_updateGenome($params->{genome});
+    $self->_updateGenome($db,$params->{genome});
     $self->_printGenome($data->{id},$params->{owner},$params->{genome});
     $self->_updateModel($db,$data);
     $success = 1;
