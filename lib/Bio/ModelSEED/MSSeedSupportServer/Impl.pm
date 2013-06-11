@@ -96,7 +96,7 @@ sub _clearBiomass {
 		return;
 	}
 	my $statement = "DELETE FROM ModelDB.COMPOUND_BIOMASS WHERE BIOMASS = '".$bioid."';";
-	print $statement."\n\n";
+	#print $statement."\n\n";
 	my $rxns  = $db->do($statement);
 }
 
@@ -107,7 +107,7 @@ sub _addBiomassCompound {
 	if (!defined($cpds) || !defined($cpds->[0]->{COMPOUND})) {
 		$select = "INSERT INTO ModelDB.COMPOUND_BIOMASS (BIOMASS,compartment,COMPOUND,coefficient,category) ";
 		$select .= "VALUES ('".$bioid."','".$comp."','".$cpd."','".$coef."','".$cat."');";
-		print $select."\n\n";
+		#print $select."\n\n";
 		$cpds  = $db->do($select);
 	} else {
 		$select = "UPDATE ModelDB.COMPOUND_BIOMASS SET BIOMASS = '".$bioid."',";
@@ -116,7 +116,7 @@ sub _addBiomassCompound {
 		$select .= "coefficient = '".$coef."',";
 		$select .= "category = '".$cat."'";
 		$select .= " WHERE BIOMASS = '".$bioid."' AND COMPOUND = '".$cpd."';";
-		print $select."\n\n";
+		#print $select."\n\n";
 		$cpds  = $db->do($select);
 	}
 }
@@ -127,7 +127,7 @@ sub _clearReactions {
 		return;
 	}
 	my $statement = "DELETE FROM ModelDB.REACTION_MODEL WHERE MODEL = '".$model."';";
-	print $statement."\n\n";
+	#print $statement."\n\n";
 	my $rxns  = $db->do($statement);
 }
 
@@ -137,9 +137,9 @@ sub _addReaction {
 	my $rxns = $db->selectall_arrayref($select, { Slice => {MODEL => 1} }, ($model,$rxn));
 	if (!defined($rxns) || !defined($rxns->[0]->{REACTION})) {
 		$select = "INSERT INTO ModelDB.REACTION_MODEL (directionality,compartment,REACTION,MODEL,pegs,confidence,reference,notes) ";
-		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE')";
-		print $select."\n\n";
-		#$rxns  = $db->do($select);
+		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE');";
+		#print $select."\n\n";
+		$rxns  = $db->do($select);
 	} else {
 		$select = "UPDATE ModelDB.REACTION_MODEL SET directionality = '".$dir."',";
 		$select .= "compartment = '".$comp."',";
@@ -149,11 +149,10 @@ sub _addReaction {
 		$select .= "confidence = '3',";
 		$select .= "reference = 'NONE',";
 		$select .= "notes = 'NONE' ";
-		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."'";
-		print $select."\n\n";
-		#$rxns  = $db->do($select);
+		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."';";
+		#print $select."\n\n";
+		$rxns  = $db->do($select);
 	}
-	return $select;
 }
 
 sub _updateGenome {
@@ -165,7 +164,7 @@ sub _updateGenome {
         	"gramNegGenes,size,gramPosGenes,public,genesWithFunctions,class,gcContent) ";
 		$statement .= "VALUES ('0','".$data->{owner}."','".$data->{source}."','".$data->{genes}."','".$data->{id}."','".
 			$data->{name}."','".$data->{taxonomy}."','0','".$data->{size}."','0','0','".$data->{genes}."','".$data->{class}."','".$data->{gc}."');";
-		print $statement."\n\n";
+		#print $statement."\n\n";
 		$genomes  = $db->do($statement);
     } else {
        	my $statement = "UPDATE ModelDB.GENOMESTATS SET genesInSubsystems = '0',";
@@ -183,7 +182,7 @@ sub _updateGenome {
 		$statement .= "class = '".$data->{class}."',";
 		$statement .= "gcContent = '".$data->{gc}."'";
 		$statement .= " WHERE GENOME = '".$data->{id}."';";
-		print $statement."\n\n";
+		#print $statement."\n\n";
 		$genomes  = $db->do($statement);
     }
 }
@@ -222,7 +221,7 @@ sub _updateModel {
 			$data->{associatedSubsystemGenes}."','".$data->{autocompleteVersion}."','".$data->{cellwalltype}."','".$data->{biomassReaction}."','".
 			$data->{growth}."','".$data->{noGrowthCompounds}."','".$data->{autocompletionDualityGap}."','".$data->{autocompletionObjective}."','".
 			$data->{name}."','".$data->{defaultStudyMedia}."');";
-		print $statement."\n\n";
+		#print $statement."\n\n";
 		$mdls  = $db->do($statement);
     } else {
        	my $statement = "UPDATE ModelDB.MODEL SET source = '".$data->{source}."',";
@@ -247,7 +246,7 @@ sub _updateModel {
 		$statement .= "name = '".$data->{name}."',";
 		$statement .= "defaultStudyMedia = '".$data->{defaultStudyMedia}."'";
 		$statement .= " WHERE id = '".$data->{id}."';";
-		print $statement."\n\n";
+		#print $statement."\n\n";
 		$mdls  = $db->do($statement);
     }
 }
@@ -261,7 +260,7 @@ sub _getBiomassID {
 		my $currids = $db->selectall_arrayref($select, { Slice => {id => 1} }, "bof");
 		$currid = $currids->[0]->{id};
 		my $statement = "UPDATE ModelDB.CURRENTID SET id = '".($currid+1)."' WHERE id = '".$currid."' AND object = 'bof';";
-    	print $statement."\n\n";
+    	#print $statement."\n\n";
 		$currids  = $db->do($statement);
     	if ($currids == 1) {
     		$continue = 0;
@@ -340,7 +339,7 @@ sub _addBiomass {
 	if (!defined($bios) || !defined($bios->[0]->{id})) {
         my $statement = "INSERT INTO ModelDB.BIOMASS (owner,name,public,equation,modificationDate,creationDate,id,cofactorPackage,lipidPackage,cellWallPackage,protein,DNA,RNA,lipid,cellWall,cofactor,DNACoef,RNACoef,proteinCoef,lipidCoef,cellWallCoef,cofactorCoef,essentialRxn,energy,unknownPackage,unknownCoef) ";
 		$statement .= "VALUES ('".$owner."','".$bioid."','0','".$equation."','".time()."','".time()."','".$bioid."','NONE','NONE','NONE','0.5284','0.026','0.0655','0.075','0.25','0.1','NONE','NONE','NONE','NONE','NONE','NONE','NONE','40','NONE','NONE');";
-		print $statement."\n\n";
+		#print $statement."\n\n";
 		$bios  = $db->do($statement);
     } else {
        	my $statement = "UPDATE ModelDB.BIOMASS SET owner = '".$owner."',";
@@ -370,7 +369,7 @@ sub _addBiomass {
 		$statement .= "unknownPackage = '40',";
 		$statement .= "unknownCoef = 'NONE'";
 		$statement .= " WHERE id = '".$bioid."';";
-		print $statement."\n\n";
+		#print $statement."\n\n";
 		$bios  = $db->do($statement);
     }
 }
@@ -1083,11 +1082,9 @@ sub load_model_to_modelseed
     	rxn05667 => 1
     };
     $self->_clearReactions($db,$data->{id});
-    #for (my $i=0; $i < @{$params->{reactions}};$i++) {
-    my $comboStatements = "";
-    for (my $i=0; $i < 5;$i++) {
+    for (my $i=0; $i < @{$params->{reactions}};$i++) {
     	my $rxn = $params->{reactions}->[$i];
-    	$comboStatements .= $self->_addReaction($db,$data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs})."\n";
+    	$self->_addReaction($db,$data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs});
     	$data->{reactions}++;
     	if (defined($spontenous->{$rxn->{id}})) {
     		$data->{spontaneousReactions}++;
@@ -1109,7 +1106,6 @@ sub load_model_to_modelseed
     		$data->{transporters}++;
     	}
     }
-    $db->do($comboStatements.";");
     $data->{associatedGenes} = keys(%{$genehash});
     $data->{compounds} = keys(%{$cpdhash});
     $self->_addReaction($db,$data->{id},$bioid,"=>","c","BOF");
