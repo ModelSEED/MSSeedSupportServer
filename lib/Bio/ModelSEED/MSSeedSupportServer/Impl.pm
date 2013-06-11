@@ -139,7 +139,7 @@ sub _addReaction {
 		$select = "INSERT INTO ModelDB.REACTION_MODEL (directionality,compartment,REACTION,MODEL,pegs,confidence,reference,notes) ";
 		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE');";
 		print $select."\n\n";
-		$rxns  = $db->do($select);
+		#$rxns  = $db->do($select);
 	} else {
 		$select = "UPDATE ModelDB.REACTION_MODEL SET directionality = '".$dir."',";
 		$select .= "compartment = '".$comp."',";
@@ -151,8 +151,9 @@ sub _addReaction {
 		$select .= "notes = 'NONE' ";
 		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."';";
 		print $select."\n\n";
-		$rxns  = $db->do($select);
+		#$rxns  = $db->do($select);
 	}
+	return $select;
 }
 
 sub _updateGenome {
@@ -1083,9 +1084,10 @@ sub load_model_to_modelseed
     };
     $self->_clearReactions($db,$data->{id});
     #for (my $i=0; $i < @{$params->{reactions}};$i++) {
+    my $comboStatements = "";
     for (my $i=0; $i < 5;$i++) {
     	my $rxn = $params->{reactions}->[$i];
-    	$self->_addReaction($db,$data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs});
+    	$comboStatements .= $self->_addReaction($db,$data->{id},$rxn->{id},$rxn->{direction},$rxn->{compartment},$rxn->{pegs})."\n";
     	$data->{reactions}++;
     	if (defined($spontenous->{$rxn->{id}})) {
     		$data->{spontaneousReactions}++;
@@ -1107,6 +1109,7 @@ sub load_model_to_modelseed
     		$data->{transporters}++;
     	}
     }
+    $db->do($comboStatements);
     $data->{associatedGenes} = keys(%{$genehash});
     $data->{compounds} = keys(%{$cpdhash});
     $self->_addReaction($db,$data->{id},$bioid,"=>","c","BOF");
