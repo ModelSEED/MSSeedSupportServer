@@ -2,6 +2,7 @@ package Bio::ModelSEED::MSSeedSupportServer::Impl;
 use strict;
 use Bio::KBase::Exceptions;
 use DBI;
+use File::Path;
 # Use Semantic Versioning (2.0.0-rc.1)
 # http://semver.org 
 our $VERSION = "0.1.0";
@@ -157,26 +158,48 @@ sub _addReaction {
 sub _updateGenome {
 	my ($self,$db,$data) = @_;
     my $select = "SELECT * FROM ModelDB.GENOMESTATS WHERE GENOME = ?";
-	my $genomes = $db->selectall_arrayref($select, { Slice => {id => 1}}, $data->{id});
-	if (!defined($genomes) || !defined($genomes->[0]->{id})) {        
-        my $statement = "INSERT INTO ModelDB.GENOMESTATS ('genesInSubsystems','owner','source','genes','GENOME','name','taxonomy',".
-        	"'gramNegGenes','size','gramPosGenes','public','genesWithFunctions','class','gcContent') ";
-		$statement .= "VALUES ('".$data->{genesInSubsystems}."','".$data->{owner}."','".$data->{source}."','".$data->{genes}."','".$data->{id}."','".
-			$data->{name}."','".$data->{taxonomy}."');";
+	my $genomes = $db->selectall_arrayref($select, { Slice => {GENOME => 1}}, $data->{id});
+	if (!defined($genomes) || !defined($genomes->[0]->{GENOME})) {        
+        my $statement = "INSERT INTO ModelDB.GENOMESTATS (genesInSubsystems,owner,source,genes,GENOME,name,taxonomy,".
+        	"gramNegGenes,size,gramPosGenes,public,genesWithFunctions,class,gcContent) ";
+		$statement .= "VALUES ('0','".$data->{owner}."','".$data->{source}."','".$data->{genes}."','".$data->{id}."','".
+			$data->{name}."','".$data->{taxonomy}."','0','".$data->{size}."','0','0','".$data->{genes}."','".$data->{class}."','".$data->{gc}."');";
 		print $statement."\n\n";
 		$genomes  = $db->do($statement);
     } else {
-       	my $statement = "UPDATE ModelDB.GENOMESTATS SET 'genesInSubsystems' = '".$data->{genesInSubsystems}."',";
-		$statement .= "'owner' = '".$data->{owner}."',";
-		$statement .= "'source' = '".$data->{source}."',";
-		$statement .= "'genes' = '".$data->{genes}."',";
-		$statement .= "'GENOME' = '".$data->{id}."',";
-		$statement .= "'name' = '".$data->{name}."',";
-		$statement .= "'taxonomy' = '".$data->{taxonomy}."'";
+       	my $statement = "UPDATE ModelDB.GENOMESTATS SET genesInSubsystems = '0',";
+		$statement .= "owner = '".$data->{owner}."',";
+		$statement .= "source = '".$data->{source}."',";
+		$statement .= "genes = '".$data->{genes}."',";
+		$statement .= "GENOME = '".$data->{id}."',";
+		$statement .= "name = '".$data->{name}."',";
+		$statement .= "taxonomy = '".$data->{taxonomy}."'";
+		$statement .= "gramNegGenes = '0',";
+		$statement .= "size = '".$data->{size}."',";
+		$statement .= "gramPosGenes = '0',";
+		$statement .= "public = '0',";
+		$statement .= "genesWithFunctions = '".$data->{genes}."',";
+		$statement .= "class = '".$data->{class}."'";
+		$statement .= "gcContent = '".$data->{gc}."'";
 		$statement .= " WHERE GENOME = '".$data->{id}."';";
 		print $statement."\n\n";
 		$genomes  = $db->do($statement);
     }
+}
+
+sub _printGenome {
+	my ($self,$model,$owner,$genome) = @_;
+	File::Path::mkpath "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/annotations/features.txt";
+    my $filename = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/annotations/features.txt"
+    open (my $fh, ">", $filename) || $self->_error("Couldn't open $filename: $!","_printGenome");
+    print $fh "ID	GENOME	ESSENTIALITY	ALIASES	TYPE	LOCATION	LENGTH	DIRECTION	MIN LOCATION	MAX LOCATION	ROLES	SOURCE	SEQUENCE\n";
+    for (my $i=0; $i < @{$genome->{features}}; $i++) {
+    	my $ftr = $genome->{features}->[$i];
+    	print $ftr->{id}."\t".$genome->{id}."\t".$ftr->{ess}."\t".$ftr->{aliases}."\t".
+    		$ftr->{type}."\t".$ftr->{location}."\t".$ftr->{"length"}."\t".$ftr->{direction}."\t".
+    		$ftr->{min}."\t".$ftr->{max}."\t".$ftr->{roles}."\t".$genome->{source}."\t".$ftr->{sequence}."\n";
+    }
+    close($fh);
 }
 
 sub _updateModel {
@@ -1021,7 +1044,7 @@ sub load_model_to_modelseed
     	}
     }
     $_ = $parts->[1];
-	my @array = /(\(\d+\.*\d*\)\scpd\d+)/g;
+	@array = /(\(\d+\.*\d*\)\scpd\d+)/g;
     for (my $j=0; $j < @array; $j++) {
     	my $cpd = $array[$j];
     	if ($cpd =~ m/\((\d+\.*\d*)\)\s(cpd\d+)/) {
@@ -1084,7 +1107,8 @@ sub load_model_to_modelseed
     $data->{compounds} = keys(%{$cpdhash});
     $self->_addReaction($db,$data->{id},$bioid,"=>","c","BOF");
     #Updating the model table
-    #$self->_updateGenome($params->{genome});
+    $self->_updateGenome($params->{genome});
+    $self->_printGenome($data->{id},$params->{owner},$params->{genome});
     $self->_updateModel($db,$data);
     $success = 1;
     $db->disconnect();
