@@ -179,7 +179,7 @@ sub _updateGenome {
 		$statement .= "gramPosGenes = '0',";
 		$statement .= "public = '0',";
 		$statement .= "genesWithFunctions = '".$data->{genes}."',";
-		$statement .= "class = '".$data->{class}."'";
+		$statement .= "class = '".$data->{class}."',";
 		$statement .= "gcContent = '".$data->{gc}."'";
 		$statement .= " WHERE GENOME = '".$data->{id}."';";
 		print $statement."\n\n";

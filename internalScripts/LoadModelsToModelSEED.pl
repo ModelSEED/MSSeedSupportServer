@@ -40,11 +40,16 @@ for (my $i=0; $i < @{$genomes};$i++) {
 		auth => $auth
 	});
 	
+	if (!defined($output->{data}->{taxonomy}) && defined($output->{data}->{domain})) {
+		$output->{data}->{taxonomy} = $output->{data}->{domain};
+	}
+	
 	my $input = {
 		genome => {
 			id => $genome,
 			genes => 0,
 			features => [],
+			owner => $owner,
 			source => $output->{data}->{source},
 			taxonomy => $output->{data}->{taxonomy},
 			name => $output->{data}->{scientific_name},
