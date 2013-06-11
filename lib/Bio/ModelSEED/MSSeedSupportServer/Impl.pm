@@ -1000,6 +1000,8 @@ sub load_model_to_modelseed
     #Getting model data
     my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
     my $data = $self->_getModelData($db,$params->{owner},$params->{genome}->{id});
+    $data->{source} = $params->{genome}->{source};
+    $data->{name} = $params->{genome}->{name};
     $data->{status} = $params->{status};
     $data->{spontaneousReactions} = 0;
     $data->{defaultStudyMedia} = "Complete";
