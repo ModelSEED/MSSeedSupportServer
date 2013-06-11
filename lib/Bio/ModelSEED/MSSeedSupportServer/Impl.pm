@@ -89,6 +89,37 @@ sub _authenticate_user {
 	};
 }
 
+sub _clearBiomass {
+	my ($self,$db,$bioid) = @_;
+	if ($model !~ m/^Seed\d+/) {
+		return;
+	}
+	my $statement = "DELETE FROM ModelDB.COMPOUND_BIOMASS WHERE BIOMASS = '".$bioid."';";
+	print $statement."\n\n";
+	my $rxns  = $db->do($statement);
+}
+
+sub _addBiomassCompound {
+	my ($self,$db,$bioid,$cpd,$coef,$comp,$cat) = @_;
+	my $select = "SELECT * FROM ModelDB.COMPOUND_BIOMASS WHERE BIOMASS = ? AND COMPOUND = ?";
+	my $cpds = $db->selectall_arrayref($select, { Slice => {COMPOUND => 1} }, ($model,$cpd));
+	if (!defined($cpds) || !defined($cpds->[0]->{COMPOUND})) {
+		$select = "INSERT INTO ModelDB.COMPOUND_BIOMASS (BIOMASS,compartment,COMPOUND,coefficient,category) ";
+		$select .= "VALUES ('".$bioid."','".$comp."','".$cpd."','".$coef."','".$cat."');";
+		print $select."\n\n";
+		$rxns  = $db->do($select);
+	} else {
+		$select = "UPDATE ModelDB.COMPOUND_BIOMASS SET BIOMASS = '".$bioid."',";
+		$select .= "compartment = '".$comp."',";
+		$select .= "COMPOUND = '".$cpd."',";
+		$select .= "coefficient = '".$coef."',";
+		$select .= "category = '".$cat."'";
+		$select .= " WHERE BIOMASS = '".$bioid."' AND COMPOUND = '".$cpd."';";
+		print $select."\n\n";
+		$rxns  = $db->do($select);
+	}
+}
+
 sub _clearReactions {
 	my ($self,$db,$model) = @_;
 	if ($model !~ m/^Seed\d+/) {
@@ -975,6 +1006,32 @@ sub load_model_to_modelseed
     	$data->{biomassReaction} = $bioid;
     }
     $self->_addBiomass($db,$params->{owner},$params->{genome}->{id},$params->{biomass},$bioid);
+    $self->_clearBiomass($db,$bioid);
+    my $parts = [split(/=/,$params->{biomass})];
+    $_ = $parts->[0];
+	my @array = /(\(\d+\.*\d*\)\scpd\d+)/g;
+    for (my $j=0; $j < @array; $j++) {
+    	my $cpd = $array[$j];
+    	if ($cpd =~ m/\((\d+\.*\d*)\)\s(cpd\d+)/) {
+    		my $coef = $1;
+    		my $cpd = $2;
+    		my $comp = "c";
+    		my $cat = "C";
+    		$self->_addBiomassCompound($db,$bioid,$cpd,-1*$coef,$comp,$cat);
+    	}
+    }
+    $_ = $parts->[1];
+	my @array = /(\(\d+\.*\d*\)\scpd\d+)/g;
+    for (my $j=0; $j < @array; $j++) {
+    	my $cpd = $array[$j];
+    	if ($cpd =~ m/\((\d+\.*\d*)\)\s(cpd\d+)/) {
+    		my $coef = $1;
+    		my $cpd = $2;
+    		my $comp = "c";
+    		my $cat = "C";
+    		$self->_addBiomassCompound($db,$bioid,$cpd,$coef,$comp,$cat);
+    	}
+    }
     #Updating the rxnmdl table
     my $cpdhash = {};
     my $genehash = {};
@@ -1009,7 +1066,7 @@ sub load_model_to_modelseed
     		$data->{autoCompleteReactions}++;
     	} else {
 	    	$_ = $rxn->{pegs};
-			my @array = /(peg\.\d+)/g;
+			@array = /(peg\.\d+)/g;
 	    	for (my $j=0; $j < @array; $j++) {
 	    		$genehash->{$array[$j]} = 1;
 	    	}
