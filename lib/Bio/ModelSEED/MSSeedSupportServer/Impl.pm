@@ -173,7 +173,7 @@ sub _updateGenome {
 		$statement .= "genes = '".$data->{genes}."',";
 		$statement .= "GENOME = '".$data->{id}."',";
 		$statement .= "name = '".$data->{name}."',";
-		$statement .= "taxonomy = '".$data->{taxonomy}."'";
+		$statement .= "taxonomy = '".$data->{taxonomy}."',";
 		$statement .= "gramNegGenes = '0',";
 		$statement .= "size = '".$data->{size}."',";
 		$statement .= "gramPosGenes = '0',";
