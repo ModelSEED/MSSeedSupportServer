@@ -190,7 +190,7 @@ sub _updateGenome {
 sub _printGenome {
 	my ($self,$model,$owner,$genome) = @_;
 	File::Path::mkpath "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/annotations/features.txt";
-    my $filename = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/annotations/features.txt"
+    my $filename = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/annotations/features.txt";
     open (my $fh, ">", $filename) || $self->_error("Couldn't open $filename: $!","_printGenome");
     print $fh "ID	GENOME	ESSENTIALITY	ALIASES	TYPE	LOCATION	LENGTH	DIRECTION	MIN LOCATION	MAX LOCATION	ROLES	SOURCE	SEQUENCE\n";
     for (my $i=0; $i < @{$genome->{features}}; $i++) {
