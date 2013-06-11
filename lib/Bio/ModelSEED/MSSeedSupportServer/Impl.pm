@@ -197,7 +197,7 @@ sub _printGenome {
     print $fh "ID	GENOME	ESSENTIALITY	ALIASES	TYPE	LOCATION	LENGTH	DIRECTION	MIN LOCATION	MAX LOCATION	ROLES	SOURCE	SEQUENCE\n";
     for (my $i=0; $i < @{$genome->{features}}; $i++) {
     	my $ftr = $genome->{features}->[$i];
-    	print $ftr->{id}."\t".$genome->{id}."\t".$ftr->{ess}."\t".$ftr->{aliases}."\t".
+    	print $fh $ftr->{id}."\t".$genome->{id}."\t".$ftr->{ess}."\t".$ftr->{aliases}."\t".
     		$ftr->{type}."\t".$ftr->{location}."\t".$ftr->{"length"}."\t".$ftr->{direction}."\t".
     		$ftr->{min}."\t".$ftr->{max}."\t".$ftr->{roles}."\t".$genome->{source}."\t".$ftr->{sequence}."\n";
     }
