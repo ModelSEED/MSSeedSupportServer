@@ -29,7 +29,7 @@ for (my $i=0; $i < @{$jobs};$i++) {
 	my $job = $jobs->[$i];
 	my $genome = $job->{jobdata}->{genome};
 	my $owner = $job->{jobdata}->{owner};
-	print "Processing ".$job->id.":".$owner.":".$genome."\n";
+	print "Processing ".$job->{id}.":".$owner.":".$genome."\n";
 	my $meta = $wserv->get_objectmeta({
 		type => "Model",
 		workspace => $owner,
