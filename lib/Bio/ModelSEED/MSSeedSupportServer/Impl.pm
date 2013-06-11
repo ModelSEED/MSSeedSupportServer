@@ -137,7 +137,7 @@ sub _addReaction {
 	my $rxns = $db->selectall_arrayref($select, { Slice => {MODEL => 1} }, ($model,$rxn));
 	if (!defined($rxns) || !defined($rxns->[0]->{REACTION})) {
 		$select = "INSERT INTO ModelDB.REACTION_MODEL (directionality,compartment,REACTION,MODEL,pegs,confidence,reference,notes) ";
-		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE');";
+		$select .= "VALUES ('".$dir."','".$comp."','".$rxn."','".$model."','".$pegs."','3','NONE','NONE')";
 		print $select."\n\n";
 		#$rxns  = $db->do($select);
 	} else {
@@ -149,7 +149,7 @@ sub _addReaction {
 		$select .= "confidence = '3',";
 		$select .= "reference = 'NONE',";
 		$select .= "notes = 'NONE' ";
-		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."';";
+		$select .= " WHERE REACTION = '".$rxn."' AND MODEL = '".$model."'";
 		print $select."\n\n";
 		#$rxns  = $db->do($select);
 	}
@@ -1109,7 +1109,7 @@ sub load_model_to_modelseed
     		$data->{transporters}++;
     	}
     }
-    $db->do($comboStatements);
+    $db->do($comboStatements.";");
     $data->{associatedGenes} = keys(%{$genehash});
     $data->{compounds} = keys(%{$cpdhash});
     $self->_addReaction($db,$data->{id},$bioid,"=>","c","BOF");
