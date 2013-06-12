@@ -56,115 +56,120 @@ for (my $i=0; $i < @{$jobs};$i++) {
 				format => "sbml",
 				workspace => $owner
 			});
-			
-			my $output = $wserv->get_object({
-				type => "Genome",
-				workspace => $owner,
-				id => $genome,
-				auth => $auth
-			});
-			
-			if (!defined($output->{data}->{taxonomy}) && defined($output->{data}->{domain})) {
-				$output->{data}->{taxonomy} = $output->{data}->{domain};
-			}
-			
-			my $input = {
-				genome => {
+			my $output;
+			eval {
+				$output = $wserv->get_object({
+					type => "Genome",
+					workspace => $owner,
 					id => $genome,
-					genes => 0,
-					features => [],
-					owner => $owner,
-					source => $output->{data}->{source},
-					taxonomy => $output->{data}->{taxonomy},
-					name => $output->{data}->{scientific_name},
-					size => $output->{data}->{size},
-					domain => $output->{data}->{domain},
-					gc => $output->{data}->{gc},
-					genetic_code => $output->{data}->{genetic_code}
-				},
-				owner => $owner,
-				reactions => [],
-				biomass => undef,
-				cellwalltype => undef,
-				status => 1
+					auth => $auth
+				});
 			};
-			
-			if (defined($output->{data}->{features})) {
-				for (my $j=0; $j < @{$output->{data}->{features}}; $j++) {
-					my $ftr = $output->{data}->{features}->[$j];
-					my $id = $ftr->{id};
-					my $roles = [split(/\s*;\s+|\s+[\@\/]\s+/,$ftr->{function})];
-					my $aliases = $ftr->{aliases};
-					my $type = "peg";
-					if ($id =~ m/fig\|\d+\.\d+\.(.+)\./) {
-						$type = $1;
-					}
-					my $dir = "for";
-					my $min = $ftr->{location}->[0]->[1];
-					my $max = $min+$ftr->{location}->[0]->[3];
-					my $loc = $min."_".$max;
-					if ($ftr->{location}->[0]->[2] eq "-") {
-						$dir = "rev";
-						$max = $min;
-						$min = $max-$ftr->{location}->[0]->[3];
-						$loc = $max."_".$min;
-					}
-					$input->{genome}->{genes}++;
-					push(@{$input->{genome}->{features}},{
-						id => $id,
-						ess => "",
-						aliases => join("|",@{$aliases}),
-						type => $type,
-						location => $loc,
-						"length" => $ftr->{location}->[0]->[3],
-						direction => $dir,
-						min => $min,
-						max => $max,
-						roles => join("|",@{$roles}),
-						source => "",
-						sequence => ""
-					});
+			if (!defined($output)) {
+				print "Genome ".$owner.":".$genome." not found!\n";
+			} else {
+				if (!defined($output->{data}->{taxonomy}) && defined($output->{data}->{domain})) {
+					$output->{data}->{taxonomy} = $output->{data}->{domain};
 				}
-			}
-			
-			my $lines = [split(/\n/,$mdldata)];
-			my $i;
-			for ($i=2; $i < @{$lines}; $i++) {
-				my $line = $lines->[$i];
-				if ($line =~ m/^NAME/) {
-					last;	
-				} else {
-					my $row = [split(/;/,$line)];
-					if (defined($row->[4])) {
-						push(@{$input->{reactions}},{
-							id => $row->[0],
-							direction => $row->[1],
-							compartment => $row->[2],
-							pegs => $row->[3],
-							equation => $row->[4]
+				
+				my $input = {
+					genome => {
+						id => $genome,
+						genes => 0,
+						features => [],
+						owner => $owner,
+						source => $output->{data}->{source},
+						taxonomy => $output->{data}->{taxonomy},
+						name => $output->{data}->{scientific_name},
+						size => $output->{data}->{size},
+						domain => $output->{data}->{domain},
+						gc => $output->{data}->{gc},
+						genetic_code => $output->{data}->{genetic_code}
+					},
+					owner => $owner,
+					reactions => [],
+					biomass => undef,
+					cellwalltype => undef,
+					status => 1
+				};
+				
+				if (defined($output->{data}->{features})) {
+					for (my $j=0; $j < @{$output->{data}->{features}}; $j++) {
+						my $ftr = $output->{data}->{features}->[$j];
+						my $id = $ftr->{id};
+						my $roles = [split(/\s*;\s+|\s+[\@\/]\s+/,$ftr->{function})];
+						my $aliases = $ftr->{aliases};
+						my $type = "peg";
+						if ($id =~ m/fig\|\d+\.\d+\.(.+)\./) {
+							$type = $1;
+						}
+						my $dir = "for";
+						my $min = $ftr->{location}->[0]->[1];
+						my $max = $min+$ftr->{location}->[0]->[3];
+						my $loc = $min."_".$max;
+						if ($ftr->{location}->[0]->[2] eq "-") {
+							$dir = "rev";
+							$max = $min;
+							$min = $max-$ftr->{location}->[0]->[3];
+							$loc = $max."_".$min;
+						}
+						$input->{genome}->{genes}++;
+						push(@{$input->{genome}->{features}},{
+							id => $id,
+							ess => "",
+							aliases => join("|",@{$aliases}),
+							type => $type,
+							location => $loc,
+							"length" => $ftr->{location}->[0]->[3],
+							direction => $dir,
+							min => $min,
+							max => $max,
+							roles => join("|",@{$roles}),
+							source => "",
+							sequence => ""
 						});
 					}
 				}
+				
+				my $lines = [split(/\n/,$mdldata)];
+				my $i;
+				for ($i=2; $i < @{$lines}; $i++) {
+					my $line = $lines->[$i];
+					if ($line =~ m/^NAME/) {
+						last;	
+					} else {
+						my $row = [split(/;/,$line)];
+						if (defined($row->[4])) {
+							push(@{$input->{reactions}},{
+								id => $row->[0],
+								direction => $row->[1],
+								compartment => $row->[2],
+								pegs => $row->[3],
+								equation => $row->[4]
+							});
+						}
+					}
+				}
+				if ($lines->[$i+1] =~ m/GramNegative/) {
+					$input->{genome}->{class} = "Gram negative";
+					$input->{cellwalltype} = "Gram negative";
+				} else {
+					$input->{genome}->{class} = "Gram positive";
+					$input->{cellwalltype} = "Gram positive";
+				}
+				if ($lines->[$i+2] =~ m/EQUATION\t(.+)/) {
+					$input->{biomass} = $1;
+				}
+				
+				$mssserv->load_model_to_modelseed($input);
+				$wserv->set_job_status({
+					auth => $auth,
+					jobid => $job->{id},
+					currentStatus => "done",
+					status => "done",
+					jobdata => {loaded => $version}
+				});
 			}
-			if ($lines->[$i+1] =~ m/GramNegative/) {
-				$input->{genome}->{class} = "Gram negative";
-				$input->{cellwalltype} = "Gram negative";
-			} else {
-				$input->{genome}->{class} = "Gram positive";
-				$input->{cellwalltype} = "Gram positive";
-			}
-			if ($lines->[$i+2] =~ m/EQUATION\t(.+)/) {
-				$input->{biomass} = $1;
-			}
-			
-			$mssserv->load_model_to_modelseed($input);
-			$wserv->set_job_status({
-				auth => $auth,
-				jobid => $job->{id},
-				currentStatus => "done",
-				status => "done",
-				jobdata => {loaded => $version}
-			});
 		} else {
 			print "Model already loaded!\n";
 		}
