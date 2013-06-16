@@ -34,6 +34,9 @@ if (-e $ARGV[0]) {
 	$job->{accounttype} = $ARGV[4];
 }
 
+$job->{jobdata}->{owner} =~ s/\*/_AST_/g;
+$job->{jobdata}->{owner} =~ s/\s/_SPACE_/g;
+$job->{jobdata}->{owner} =~ s/\-/_DASH_/g;
 $job->{jobdata}->{owner} =~ s/\./_DOT_/g;
 $job->{jobdata}->{owner} =~ s/\@/_AT_/g;
 
