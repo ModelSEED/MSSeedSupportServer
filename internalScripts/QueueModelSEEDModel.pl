@@ -36,7 +36,7 @@ for (my $i=0; $i < @{$models}; $i++) {
 	my $model = $models->[$i];
 	if ($model->{genome} =~ m/^\d+\.\d+$/) {
 		if (!defined($genomes->{$model->{genome}}->{$model->{owner}})) {
-			print "Queueing model ".$model->{owner}."\t".$model->{genome}."\n"
+			print "Queueing model ".$model->{owner}."\t".$model->{genome}."\n";
 			$wserv->queue_job({
 				auth => $auth,
 				"state" => undef,
