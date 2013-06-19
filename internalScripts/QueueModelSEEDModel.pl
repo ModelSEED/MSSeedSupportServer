@@ -2,48 +2,53 @@
 
 use strict;
 use warnings;
-use JSON::XS;
-use Test::More;
-use Data::Dumper;
-use File::Temp qw(tempfile);
-use LWP::Simple;
-use Config::Simple;
+use DBI;
 use Bio::KBase::workspaceService::Client;
 
-my $wserv = Bio::KBase::workspaceService::Client->new("http://bio-data-1.mcs.anl.gov/services/ms_workspace");
+my $url = "http://bio-data-1.mcs.anl.gov/services/ms_workspace";
+my $auth = "chenry	Ko3BA9yMnMj2k";
+my $wserv = Bio::KBase::workspaceService::Client->new($url);
 
-for (my $i=7; $i < 2668;$i++) {
-	$wserv->set_job_status({
-		auth => "chenry Ko3BA9yMnMj2k",
-		jobid => "job.".$i,
-		currentStatus => "error",
-		status => "queued",
-		jobdata => {error => ""}
-	});
+my $jobs = $wserv->get_jobs({
+	type => "MSBuildModel",
+	auth => $auth
+});
+my $genomes; 
+for (my $i=0; $i < @{$jobs}; $i++) {
+	my $job = $jobs->[$i];
+	if ($job->{jobdata}->{genome} =~ m/^\d+\.\d+$/) {
+		$genomes->{$job->{jobdata}->{genome}}->{$job->{jobdata}->{owner}} = 1;
+	}
 }
-
-if (!defined($ARGV[0])) {
-	exit(0);
-}
-my $auth = $ARGV[1];
-open(my $fh, "<", $ARGV[0]) || return;
-my @lines = <$fh>;
-close($fh);
-for (my $i=0; $i < @lines;$i++) {
-	my $line = $lines[$i];
-	#print $line."\n";
-	my $row = [split(/\t/,$line)];
-	if ($row->[5] eq "-2") {
-		$wserv->queue_job({
-			auth => $auth,
-			"state" => undef,
-			type => "MSBuildModel",
-			queuecommand => "QueueModelSEED",
-			jobdata => {
-				owner => $row->[17],
-				genome => $row->[10],
-			}
-		});
+my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+my $select = "SELECT * FROM ModelDB.MODEL WHERE status = ?";
+my $models = $db->selectall_arrayref($select, { Slice => {
+	_id => 1,
+	source => 1,
+	status => 1,
+	genome => 1,
+	id => 1,
+	owner => 1,
+	name => 1,
+} }, "-2");
+print @{$models}." models queued!\n";
+for (my $i=0; $i < @{$models}; $i++) {
+	my $model = $models->[$i];
+	if ($model->{genome} =~ m/^\d+\.\d+$/) {
+		if (!defined($genomes->{$model->{genome}}->{$model->{owner}})) {
+			$wserv->queue_job({
+				auth => $auth,
+				"state" => undef,
+				type => "MSBuildModel",
+				queuecommand => "QueueModelSEED",
+				jobdata => {
+					owner => $model->{owner},
+					genome => $model->{genome},
+				}
+			});
+		}
+		my $statement = "UPDATE ModelDB.MODEL SET status = '-3' WHERE id = '".$model->{id}."';";
+		$db->do($statement);
 	}
 }
 
