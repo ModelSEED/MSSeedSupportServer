@@ -44,11 +44,13 @@ my $models = $db->selectall_arrayref($select, { Slice => $keys });
 my $keylist = [keys(%{$keys})];
 print "Index\t".join("\t",@{$keylist})."\n";
 for (my $i=0; $i < @{$models}; $i++) {
-	print $i;
-	for (my $j=0; $j < @{$keylist}; $j++) {
-		print "\t".$models->[$i]->{$keylist->[$j]};
+	if ($models->[$i]->{id} !~ m/Seed\d+\.\d+\.\d+/) {
+		print $i;
+		for (my $j=0; $j < @{$keylist}; $j++) {
+			print "\t".$models->[$i]->{$keylist->[$j]};
+		}
+		print "\n";
 	}
-	print "\n";
 }
 
 1;
