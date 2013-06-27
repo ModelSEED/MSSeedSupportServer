@@ -247,7 +247,7 @@ while(1) {
 		}
 	}
 	#Looping
-	sleep($st);
+	sleep($params->{looptime});
 }
 
 1;
