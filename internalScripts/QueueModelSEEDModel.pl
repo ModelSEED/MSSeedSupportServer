@@ -47,6 +47,8 @@ for (my $i=0; $i < @{$models}; $i++) {
 					genome => $model->{genome},
 				}
 			});
+		} else {
+			print "Model already running!"
 		}
 		my $statement = "UPDATE ModelDB.MODEL SET status = '-3' WHERE id = '".$model->{id}."';";
 		$db->do($statement);
