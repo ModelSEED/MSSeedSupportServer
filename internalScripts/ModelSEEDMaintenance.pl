@@ -80,7 +80,7 @@ sub loop {
 sub work {
 	my($self) = @_;
 	#Loading genomes for queued models
-	my $models = $self->retreiveModels("-3");
+	my $models = $self->retreiveModels("-10");
 	for (my $i=0; $i < @{$models};$i++) {
 		my $model = $models->[$i];
 		if ($model->{genome} =~ m/^\d+\.\d+$/) {
@@ -94,26 +94,6 @@ sub work {
 				$self->updateModelStatus("-4",$model);
 			} else {
 				print "Model build failed ".$model->{id}."!\n";
-				$self->updateModelStatus("-10",$model);
-			}
-		}
-	}
-	#Loading genomes for recently queued models
-	$models = $self->retreiveModels("-2");
-	for (my $i=0; $i < @{$models};$i++) {
-		my $model = $models->[$i];
-		if ($model->{genome} =~ m/^\d+\.\d+$/) {
-			print "Loading genome for ".$model->{id}."!\n";
-			$self->loadGenomeForModel($model);
-			print "Building model for ".$model->{id}."!\n";
-			$self->buildModelForGenome($model);
-			if ($self->modelExists($model)) {
-				print "Loading model to ModelSEED ".$model->{id}."!\n";
-				$self->loadModel($model);
-				$self->updateModelStatus("-4",$model);
-			} else {
-				print "Model build failed ".$model->{id}."!\n";
-				$self->updateModelStatus("-10",$model);
 			}
 		}
 	}
@@ -386,10 +366,15 @@ sub readconfig {
 	#Reading in the config file
 	my $servicename = "msmaint";
 	my $params = {
-		wsurl => undef,
 		auth => undef,
 		looptime => undef,
-		dbuser => undef
+		dbuser => undef,
+		fba-url => undef,
+		ws-url => undef,
+		ms-url => undef,
+		rastlogin => undef,
+		rastpassword => undef,
+		PubSEEDGenomes => undef
 	};
 	if (!-e $self->directory()."/config.ini") {
 		print "No config file found!";
