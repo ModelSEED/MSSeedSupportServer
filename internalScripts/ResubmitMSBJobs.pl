@@ -36,16 +36,16 @@ for (my $i=0; $i < @{$jobs}; $i++) {
 		print $job->{id}."\t".$job->{jobdata}->{genome}."\t".$job->{jobdata}->{owner}."\tEmpty genome feature set\t\n";
 	} elsif (defined($job->{jobdata}->{error}) && $job->{jobdata}->{error} =~ m/recv\stimed\sout/) {
 		print $job->{id}."\t".$job->{jobdata}->{genome}."\t".$job->{jobdata}->{owner}."\tRecv time out\t\n";
-		$resubmit = 1;
+		#$resubmit = 1;
 	} elsif (defined($job->{jobdata}->{error}) && $job->{jobdata}->{error} =~ m/HTTP\sstatus.\s500\sCan.t\sconnect\sto\sbiologin.4\.mcs\.anl\.gov.7050/) {
 		print $job->{id}."\t".$job->{jobdata}->{genome}."\t".$job->{jobdata}->{owner}."\tCannot connect to server!\t\n";
 		#$resubmit = 1;
 	} elsif (defined($job->{jobdata}->{error}) && $job->{jobdata}->{error} =~ m/Cannot\screate\sworkspace\sbecause\sworkspace\salready\sexists/) {
 		print $job->{id}."\t".$job->{jobdata}->{genome}."\t".$job->{jobdata}->{owner}."\tWorkspace already exists!\t\n";
-		$resubmit = 1;
+		#$resubmit = 1;
 	} elsif (defined($job->{jobdata}->{error}) && $job->{jobdata}->{error} =~ m/HTTP\sstatus.\s504\sGateway\sTime.out/) {
 		print $job->{id}."\t".$job->{jobdata}->{genome}."\t".$job->{jobdata}->{owner}."\tGateway time out!\t\n";
-		$resubmit = 1;
+		#$resubmit = 1;
 	} elsif (defined($job->{jobdata}->{error}) && $job->{jobdata}->{error} =~ m/Can.t\slocate\sBio.KBase.probabilistic_annotation.Client.pm/) {
 		print $job->{id}."\t".$job->{jobdata}->{genome}."\t".$job->{jobdata}->{owner}."\tCannot locate probano service!\t\n";
 		#$resubmit = 1;
