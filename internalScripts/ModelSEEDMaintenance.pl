@@ -369,9 +369,9 @@ sub readconfig {
 		auth => undef,
 		looptime => undef,
 		dbuser => undef,
-		fba-url => undef,
-		ws-url => undef,
-		ms-url => undef,
+		"fba-url" => undef,
+		"ws-url" => undef,
+		"ms-url" => undef,
 		rastlogin => undef,
 		rastpassword => undef,
 		PubSEEDGenomes => undef
