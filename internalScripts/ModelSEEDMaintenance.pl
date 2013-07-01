@@ -216,6 +216,9 @@ sub modelExists {
 
 sub buildModelForGenome {
 	my($self,$model) = @_;
+	if ($self->modelExists($model) == 1) {
+		return;
+	}
 	eval {
 		$self->fbaserv()->genome_to_fbamodel({
 			genome => $model->{genome},
