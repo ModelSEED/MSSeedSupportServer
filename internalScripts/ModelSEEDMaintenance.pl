@@ -116,7 +116,7 @@ sub loadGenomeForModel {
 		return;
 	}
 	if ($self->PubSEEDGenome($genome) == 1) {
-		eval {
+		#eval {
 			$self->fbaserv()->genome_to_workspace({
 				genome => $genome,
 				workspace => "ModelSEEDGenomes",
@@ -124,9 +124,9 @@ sub loadGenomeForModel {
 				auth => $self->params("auth"),
 				overwrite => 1
 			});
-		};
+		#};
 	} else {
-		eval {
+		#eval {
 			$self->fbaserv()->genome_to_workspace({
 				genome => $genome,
 				workspace => "ModelSEEDGenomes",
@@ -136,7 +136,7 @@ sub loadGenomeForModel {
 				auth => $self->params("auth"),
 				overwrite => 1
 			});
-		};
+		#};
 	}
 }
 
