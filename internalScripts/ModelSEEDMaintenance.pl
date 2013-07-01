@@ -126,7 +126,6 @@ sub loadGenomeForModel {
 		}; print STDERR $@ if $@;
 	} else {
 		eval {
-			print "Starting call!\n";
 			my $output = $self->fbaserv()->genome_to_workspace({
 				genome => $genome,
 				workspace => "ModelSEEDGenomes",
@@ -136,7 +135,6 @@ sub loadGenomeForModel {
 				auth => $self->params("auth"),
 				overwrite => 1
 			});
-			print "Call complete!\n";
 		}; print STDERR $@ if $@;
 	}
 }
