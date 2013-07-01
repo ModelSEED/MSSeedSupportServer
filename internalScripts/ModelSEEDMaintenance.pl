@@ -116,7 +116,6 @@ sub loadGenomeForModel {
 	}
 	if ($self->PubSEEDGenome($genome) == 1) {
 		eval {
-			print "Starting call!\n";
 			my $output = $self->fbaserv()->genome_to_workspace({
 				genome => $genome,
 				workspace => "ModelSEEDGenomes",
@@ -124,8 +123,7 @@ sub loadGenomeForModel {
 				auth => $self->params("auth"),
 				overwrite => 1
 			});
-			print "Call complete!\n";
-		};
+		}; print STDERR $@ if $@;
 	} else {
 		eval {
 			print "Starting call!\n";
@@ -139,7 +137,7 @@ sub loadGenomeForModel {
 				overwrite => 1
 			});
 			print "Call complete!\n";
-		};
+		}; print STDERR $@ if $@;
 	}
 }
 
@@ -205,7 +203,7 @@ sub buildModelForGenome {
 			model => $model->{id},
 			auth => $self->params("auth"),
 		});
-	};
+	}; print STDERR $@ if $@;
 }
 
 sub loadModel {
@@ -327,7 +325,7 @@ sub loadModel {
 	}
 	eval {
 		$self->msserv()->load_model_to_modelseed($input);
-	};
+	}; print STDERR $@ if $@;
 }
 
 sub gapfillModel {
@@ -339,7 +337,7 @@ sub gapfillModel {
 			workspace => "ModelSEEDModels",
 			auth => $self->params("auth"),
 		});
-	};
+	}; print STDERR $@ if $@;
 }
 
 sub loadGapfillModel {
