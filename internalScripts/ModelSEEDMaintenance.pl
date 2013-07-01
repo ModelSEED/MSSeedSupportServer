@@ -81,6 +81,7 @@ sub work {
 	my($self) = @_;
 	#Loading genomes for queued models
 	my $models = $self->retreiveModels("-10");
+	print @{$models}." models!\n";
 	for (my $i=0; $i < @{$models};$i++) {
 		my $model = $models->[$i];
 		if ($model->{genome} =~ m/^\d+\.\d+$/) {
