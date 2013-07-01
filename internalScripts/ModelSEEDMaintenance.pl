@@ -31,7 +31,7 @@ package msmaintainer;
 
 sub new {
 	my ($class,$params) = @_;
-	if (-d $params->{directory}) {
+	if (!-d $params->{directory}) {
 		print "Input directory ".$params->{directory}." does not exist!\n";
 		exit(-1);
 	}
