@@ -92,19 +92,13 @@ sub work {
 			if ($self->modelExists($model)) {
 				print "Loading model to ModelSEED ".$model->{id}."!\n";
 				$self->loadModel($model);
-				$self->updateModelStatus("-4",$model);
+				print "Queueing gapfilling for ".$model->{id}."!\n";
+				$self->gapfillModel($model);
+				$self->updateModelStatus("-5",$model);
 			} else {
 				print "Model build failed ".$model->{id}."!\n";
 			}
 		}
-	}
-	#Gapfilling models
-	$models = $self->retreiveModels("-4");
-	for (my $i=0; $i < @{$models};$i++) {
-		my $model = $models->[$i];
-		print "Queueing gapfilling for ".$model->{id}."!\n";
-		$self->gapfillModel($model);
-		$self->updateModelStatus("-5",$model);
 	}
 	#Loading gapfilled models
 	$models = $self->retreiveModels("-5");
