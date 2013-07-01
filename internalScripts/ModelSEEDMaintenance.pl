@@ -116,17 +116,20 @@ sub loadGenomeForModel {
 	}
 	if ($self->PubSEEDGenome($genome) == 1) {
 		eval {
-			$self->fbaserv()->genome_to_workspace({
+			print "Starting call!\n";
+			my $output = $self->fbaserv()->genome_to_workspace({
 				genome => $genome,
 				workspace => "ModelSEEDGenomes",
 				source => "seed",
 				auth => $self->params("auth"),
 				overwrite => 1
 			});
+			print "Call complete!\n";
 		};
 	} else {
 		eval {
-			$self->fbaserv()->genome_to_workspace({
+			print "Starting call!\n";
+			my $output = $self->fbaserv()->genome_to_workspace({
 				genome => $genome,
 				workspace => "ModelSEEDGenomes",
 				sourceLogin => $self->params("rastlogin"),
@@ -135,6 +138,7 @@ sub loadGenomeForModel {
 				auth => $self->params("auth"),
 				overwrite => 1
 			});
+			print "Call complete!\n";
 		};
 	}
 }
