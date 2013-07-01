@@ -1,5 +1,3 @@
-#!/usr/bin/perl -w
-
 use strict;
 use warnings;
 use DBI;
@@ -10,6 +8,7 @@ use LWP::Simple;
 use Bio::KBase::workspaceService::Client;
 use Bio::KBase::fbaModelServices::Client;
 use Bio::ModelSEED::MSSeedSupportServer::Client;
+$|=1;
 
 #Creating the error message printed whenever the user input makes no sense
 my $Usage = "ModelSEEDMaintenance must be called with the following syntax:\n".
