@@ -83,7 +83,7 @@ sub work {
 	print @{$models}." models!\n";
 	for (my $i=0; $i < @{$models};$i++) {
 		my $model = $models->[$i];
-		if ($model->{genome} =~ m/^\d+\.\d+$/) {
+		if ($model->{id} =~ m/^Seed[\d\.]+$/ && $model->{genome} =~ m/^\d+\.\d+$/) {
 			print "Loading genome for ".$model->{id}."!\n";
 			$self->loadGenomeForModel($model);
 			print "Building model for ".$model->{id}."!\n";
