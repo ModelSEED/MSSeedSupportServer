@@ -105,14 +105,16 @@ for (my $m=0; $m < 10; $m++) {
 		my $rxnrow = [$rxn->{REACTION},"","","","",$rxn->{compartment},"",$rxn->{pegs}];
 		if (defined($rxndb->{$rxn->{REACTION}})) {
 			my $rxndata = $rxndb->{$rxn->{REACTION}};
-			my $dir = $rxn->{direction};
+			my $dir = $rxn->{directionality};
 			$rxnrow->[1] = $rxndata->{name};
 			$rxnrow->[2] = $rxndata->{equation};
 			$rxnrow->[3] = $rxndata->{definition};
 			$rxnrow->[4] = $rxndata->{enzyme};
 			$rxnrow->[6] = $rxndata->{deltaG};
-			$rxnrow->[2] =~ s/<=>/$dir/;
-			$rxnrow->[3] =~ s/<=>/$dir/;
+			$rxnrow->[2] =~ s/<=>|<=|=>/$dir/;
+			$rxnrow->[3] =~ s/<=>|<=|=>/$dir/;
+			$rxnrow->[2] =~ s/^=>/NONE =>/;
+			$rxnrow->[3] =~ s/^=>/NONE =>/;
 			$_ = $rxndata->{equation};
 			my @array = /(cpd\d+)/g;
 	    	for (my $j=0; $j < @array; $j++) {
