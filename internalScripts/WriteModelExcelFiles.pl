@@ -2,12 +2,7 @@
 
 use strict;
 use warnings;
-use JSON::XS;
-use Test::More;
-use Data::Dumper;
-use File::Temp qw(tempfile);
-use LWP::Simple;
-use Config::Simple;
+use DBI;
 use Spreadsheet::WriteExcel;
 
 my $headingTranslation = {
