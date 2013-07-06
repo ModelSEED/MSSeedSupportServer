@@ -78,8 +78,8 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 	name => 1,
 } });
 
-#for (my $m=0; $m < @{$models}; $m++) {
-for (my $m=0; $m < 10; $m++) {
+for (my $m=0; $m < @{$models}; $m++) {
+#for (my $m=0; $m < 10; $m++) {
 	my $model = $models->[$m];
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$model->{owner}."/".$model->{id}."/0/";
 	my $excelfile = $directory."excel.xls";
@@ -157,7 +157,7 @@ for (my $m=0; $m < 10; $m++) {
 			if ($ftrrow->[0] =~ m/(peg\.\d+)/) {
 				my $peg = $1;
 				if (defined($ftrrxn->{$peg})) {
-					$ftrrow->[7] = join("|",keys(%{$ftrrxn->{$peg}}));
+					$ftrrow->[6] = join("|",keys(%{$ftrrxn->{$peg}}));
 				}
 			}
 			push(@{$ftrtbl},$ftrrow);
