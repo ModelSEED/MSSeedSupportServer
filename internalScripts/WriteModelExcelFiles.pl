@@ -5,6 +5,8 @@ use warnings;
 use DBI;
 use Spreadsheet::WriteExcel;
 
+my $overwrite = $ARGV[0];
+
 my $headingTranslation = {
 	ID => 0,
 	TYPE => 1,
@@ -75,8 +77,6 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 	owner => 1,
 	name => 1,
 } });
-
-my $overwrite = 0;
 
 #for (my $m=0; $m < @{$models}; $m++) {
 for (my $m=0; $m < 10; $m++) {
