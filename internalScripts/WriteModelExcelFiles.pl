@@ -9,10 +9,9 @@ my $headingTranslation = {
 	ID => 0,
 	TYPE => 1,
 	ROLES => 2,
-	LOCATION => 3,
-	"MIN LOCATION" => 4,
-	"MAX LOCATION" => 5,
-	DIRECTION => 6
+	"MIN LOCATION" => 3,
+	"MAX LOCATION" => 4,
+	DIRECTION => 5
 };
 
 my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
@@ -100,7 +99,7 @@ for (my $m=0; $m < 10; $m++) {
 		REACTION => 1,
 		MODEL => 1,
 		pegs => 1
-	} }, $model);
+	} }, $model->{id});
 	for (my $i=0; $i < @{$rxns}; $i++) {
 		my $rxn = $rxns->[$i];
 		my $rxnrow = [$rxn->{REACTION},"","","","",$rxn->{compartment},"",$rxn->{pegs}];
@@ -181,7 +180,7 @@ for (my $m=0; $m < 10; $m++) {
 	}
 	if (@{$ftrtbl} > 0) {
 		my $sheet = $wkbk->add_worksheet("Genes");
-		$sheet->write_row(0,0,["ID","Type","Functions","Contig","Start","Stop","Direction","Reactions"]);
+		$sheet->write_row(0,0,["ID","Type","Functions","Start","Stop","Direction","Reactions"]);
 		for (my $i=0; $i < @{$ftrtbl}; $i++) {
 			my $ftr = $ftrtbl->[$i];
 			$sheet->write_row($i+1,0,$ftr);
