@@ -79,7 +79,6 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 } });
 
 for (my $m=0; $m < @{$models}; $m++) {
-#for (my $m=0; $m < 10; $m++) {
 	my $model = $models->[$m];
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$model->{owner}."/".$model->{id}."/0/";
 	my $excelfile = $directory."excel.xls";

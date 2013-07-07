@@ -1,8 +1,6 @@
 package Bio::ModelSEED::MSSeedSupportServer::Impl;
 use strict;
 use Bio::KBase::Exceptions;
-use DBI;
-use File::Path;
 # Use Semantic Versioning (2.0.0-rc.1)
 # http://semver.org 
 our $VERSION = "0.1.0";
@@ -26,6 +24,9 @@ MSSeedSupportServer
 =cut
 
 #BEGIN_HEADER
+use Spreadsheet::WriteExcel;
+use DBI;
+use File::Path;
 sub _setContext {
 	my ($self,$params) = @_;
     if (defined($params->{username}) && length($params->{username}) > 0) {
@@ -372,6 +373,113 @@ sub _addBiomass {
 		#print $statement."\n\n";
 		$bios  = $db->do($statement);
     }
+}
+
+sub _write_excel_file {
+	my ($self,$db,$model,$owner) = @_;
+	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/";
+	my $excelfile = $directory."excel.xls";
+	my $ftrrxn = {};
+	my $cpdhash = {};
+	my $cpdtbl = [];
+	my $rxntbl = [];
+	my $ftrtbl = [];
+	$select = "SELECT * FROM ModelDB.REACTION_MODEL WHERE MODEL = ?";
+	my $rxns = $db->selectall_arrayref($select, { Slice => {
+		directionality => 1,
+		compartment => 1,
+		REACTION => 1,
+		MODEL => 1,
+		pegs => 1
+	} }, $model);
+	for (my $i=0; $i < @{$rxns}; $i++) {
+		my $rxn = $rxns->[$i];
+		my $rxnrow = [$rxn->{REACTION},"","","","",$rxn->{compartment},"",$rxn->{pegs}];
+		if (defined($rxndb->{$rxn->{REACTION}})) {
+			my $rxndata = $rxndb->{$rxn->{REACTION}};
+			my $dir = $rxn->{directionality};
+			$rxnrow->[1] = $rxndata->{name};
+			$rxnrow->[2] = $rxndata->{equation};
+			$rxnrow->[3] = $rxndata->{definition};
+			$rxnrow->[4] = $rxndata->{enzyme};
+			$rxnrow->[6] = $rxndata->{deltaG};
+			$rxnrow->[2] =~ s/<=>|<=|=>/$dir/;
+			$rxnrow->[3] =~ s/<=>|<=|=>/$dir/;
+			$rxnrow->[2] =~ s/^=>/NONE =>/;
+			$rxnrow->[3] =~ s/^=>/NONE =>/;
+			$_ = $rxndata->{equation};
+			my @array = /(cpd\d+)/g;
+	    	for (my $j=0; $j < @array; $j++) {
+	    		$cpdhash->{$array[$j]}->{$rxn->{REACTION}} = 1;
+	    	}
+		}
+		$_ = $rxn->{pegs};
+		my @array = /(peg\.\d+)/g;
+	    for (my $j=0; $j < @array; $j++) {
+	    	$ftrrxn->{$array[$j]}->{$rxn->{REACTION}} = 1;
+	    }
+		push(@{$rxntbl},$rxnrow);
+	}
+	foreach my $cpd (keys(%{$cpdhash})) {
+		my $cpdrow = [$cpd,"","","","","",join("|",keys(%{$cpdhash->{$cpd}}))];
+		if (defined($cpddb->{$cpd})) {
+			my $cpddata = $cpddb->{$cpd};
+			$cpdrow->[1] = $cpddata->{name};
+			$cpdrow->[2] = $cpddata->{abbrev};
+			$cpdrow->[3] = $cpddata->{formula};
+			$cpdrow->[4] = $cpddata->{charge};
+			$cpdrow->[5] = $cpddata->{deltaG};
+		}
+		push(@{$cpdtbl},$cpdrow);
+	}
+	if (-e $directory."annotations/features.txt") {
+		open (my $fh, "<", $directory."annotations/features.txt");
+		my @lines = <$fh>;
+		close($fh);
+		my $headings = [split(/\t/,shift(@lines))];
+		for (my $i=0; $i < @lines;$i++) {
+			my $line = $lines[$i];
+			my $row = [split(/\t/,$line)];
+			my $ftrrow = ["","","","","","","",""];
+			for (my $j=0; $j < @{$headings}; $j++) {
+				if (defined($headingTranslation->{$headings->[$j]})) {
+					$ftrrow->[$headingTranslation->{$headings->[$j]}] = $row->[$j];
+				}
+			}
+			if ($ftrrow->[0] =~ m/(peg\.\d+)/) {
+				my $peg = $1;
+				if (defined($ftrrxn->{$peg})) {
+					$ftrrow->[6] = join("|",keys(%{$ftrrxn->{$peg}}));
+				}
+			}
+			push(@{$ftrtbl},$ftrrow);
+		}
+	}
+	my $wkbk = Spreadsheet::WriteExcel->new($excelfile);
+	if (@{$cpdtbl} > 0) {
+		my $sheet = $wkbk->add_worksheet("Compounds");
+		$sheet->write_row(0,0,["ID","Name","Abbreviation","Formula","Charge","DeltaG","Reactions"]);
+		for (my $i=0; $i < @{$cpdtbl}; $i++) {
+			my $cpd = $cpdtbl->[$i];
+			$sheet->write_row($i+1,0,$cpd);
+		}
+	}
+	if (@{$rxntbl} > 0) {
+		my $sheet = $wkbk->add_worksheet("Reactions");
+		$sheet->write_row(0,0,["ID","Name","Equation","Definition","EC","Compartment","DeltaG","Pegs"]);
+		for (my $i=0; $i < @{$rxntbl}; $i++) {
+			my $rxn = $rxntbl->[$i];
+			$sheet->write_row($i+1,0,$rxn);
+		}
+	}
+	if (@{$ftrtbl} > 0) {
+		my $sheet = $wkbk->add_worksheet("Genes");
+		$sheet->write_row(0,0,["ID","Type","Functions","Start","Stop","Direction","Reactions"]);
+		for (my $i=0; $i < @{$ftrtbl}; $i++) {
+			my $ftr = $ftrtbl->[$i];
+			$sheet->write_row($i+1,0,$ftr);
+		}
+	}
 }
 
 sub _webapp_db_connect {
@@ -1113,6 +1221,7 @@ sub load_model_to_modelseed
     $self->_updateGenome($db,$params->{genome});
     $self->_printGenome($data->{id},$params->{owner},$params->{genome});
     $self->_updateModel($db,$data);
+    $self->_write_excel_file($db,$data->{id},$params->{owner});
     $success = 1;
     $db->disconnect();
     #END load_model_to_modelseed
