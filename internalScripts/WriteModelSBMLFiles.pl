@@ -32,8 +32,8 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 	name => 1,
 } });
 
-my $wserv = Bio::KBase::workspaceService::Client->new($c->param("writesbml.wsurl"));
-my $fbaserv = Bio::KBase::fbaModelServices::Client->new($c->param("writesbml.fbaurl"));
+my $wserv = Bio::KBase::workspaceService::Client->new($c->param("kbclientconfig.wsurl"));
+my $fbaserv = Bio::KBase::fbaModelServices::Client->new($c->param("kbclientconfig.fbaurl"));
 for (my $m=0; $m < @{$models}; $m++) {
 	my $model = $models->[$m];
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$model->{owner}."/".$model->{id}."/0/";
@@ -47,14 +47,14 @@ for (my $m=0; $m < @{$models}; $m++) {
 			type => "Model",
 			workspace => "ModelSEEDModels",
 			id => $model->{id},
-			auth => $c->param("writesbml.auth")
+			auth => $c->param("kbclientconfig.auth")
 		});
 	};
 	if (defined($meta)) {
 		my $mdldata;
 		eval {
 			$mdldata = $fbaserv->export_fbamodel({
-				auth => $c->param("writesbml.auth"),
+				auth => $c->param("kbclientconfig.auth"),
 				model => $model->{id},
 				format => "sbml",
 				workspace => "ModelSEEDModels"
