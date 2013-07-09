@@ -79,7 +79,7 @@ sub loop {
 sub work {
 	my($self) = @_;
 	#Loading genomes for queued models
-	my $models = $self->retreiveModels("-10");
+	my $models = $self->retreiveModels("-2");
 	print @{$models}." models!\n";
 	for (my $i=0; $i < @{$models};$i++) {
 		my $model = $models->[$i];
