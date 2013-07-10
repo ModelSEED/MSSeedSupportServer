@@ -8,6 +8,10 @@ use Bio::KBase::workspaceService::Client;
 use Bio::KBase::fbaModelServices::Client;
 
 my $config = $ARGV[0];
+my $overwrite = 0;
+if (defined($ARGV[1])) {
+	$overwrite = $ARGV[1];
+}
 if (!defined($config)) {
 	print STDERR "No config file provided!\n";
 	exit(-1);
