@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use DBI;
 use Config::Simple;
+use File::Path;
 use Bio::KBase::workspaceService::Client;
 use Bio::KBase::fbaModelServices::Client;
 
@@ -41,6 +42,9 @@ my $fbaserv = Bio::KBase::fbaModelServices::Client->new($c->param("kbclientconfi
 for (my $m=0; $m < @{$models}; $m++) {
 	my $model = $models->[$m];
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$model->{owner}."/".$model->{id}."/0/";
+	if (!-e $directory) {
+		mkpath $directroy;
+	}
 	my $sbmlfile = $directory."model.sbml";
 	if ($overwrite == 0 && -e $sbmlfile) {
 		next;
