@@ -43,7 +43,7 @@ for (my $m=0; $m < @{$models}; $m++) {
 	my $model = $models->[$m];
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$model->{owner}."/".$model->{id}."/0/";
 	if (!-e $directory) {
-		mkpath $directroy;
+		mkpath $directory;
 	}
 	my $sbmlfile = $directory."model.sbml";
 	if ($overwrite == 0 && -e $sbmlfile) {
