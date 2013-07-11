@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use DBI;
+use File::Path;
 use Spreadsheet::WriteExcel;
 
 my $overwrite = $ARGV[0];
@@ -81,6 +82,9 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 for (my $m=0; $m < @{$models}; $m++) {
 	my $model = $models->[$m];
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$model->{owner}."/".$model->{id}."/0/";
+	if (!-e $directory) {
+		mkpath $directory;
+	}
 	my $excelfile = $directory."excel.xls";
 	print $excelfile."\n";
 	if ($overwrite == 0 && -e $excelfile) {
