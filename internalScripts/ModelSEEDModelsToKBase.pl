@@ -79,19 +79,22 @@ for (my $m=0; $m < @{$models}; $m++) {
 				id => 1,
 				equation => 1
 			}}, $model->{biomassReaction});
+			print STDERR "Biomass equation:".$model->{biomassReaction}.":".$bios->[0]->{id}.":".$bios->[0]->{equation}."\n\n";
 			my $biomass = $bios->[0]->{equation};
 			#Load model to KBase
-			eval {
-				$fbaserv->import_fbamodel({
-					genome => "0000000.0",
-					genome_workspace => "ModelSEEDGenomes",
-					biomass => $biomass,
-					reactions => $reactions,
-					model => $model->{id},
-					workspace => "ModelSEEDModels",
-					auth => $c->param("kbclientconfig.auth")
-				});
-			}; print STDERR $@ if $@;
+			if (defined($biomass)) {
+				eval {
+					$fbaserv->import_fbamodel({
+						genome => "0000000.0",
+						genome_workspace => "ModelSEEDGenomes",
+						biomass => $biomass,
+						reactions => $reactions,
+						model => $model->{id},
+						workspace => "ModelSEEDModels",
+						auth => $c->param("kbclientconfig.auth")
+					});
+				}; print STDERR $@ if $@;
+			}
 		}
 	}
 }
