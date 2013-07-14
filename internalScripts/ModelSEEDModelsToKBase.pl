@@ -43,6 +43,7 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 
 for (my $m=0; $m < @{$models}; $m++) {
 	my $model = $models->[$m];
+	print "Processing ".$model->{id}."!\n";
 	my $meta;
 	eval {
 		$meta = $wserv->get_objectmeta({
@@ -65,10 +66,10 @@ for (my $m=0; $m < @{$models}; $m++) {
 		} }, $model->{id});
 		for (my $i=0; $i < @{$rxns}; $i++) {
 			my $rxn = $rxns->[$i];
-			$rxn->{pegs} =~ s/\|/ or /g;
 			if ($rxn->{pegs} !~ m/peg\.\d+/) {
 				$rxn->{pegs} = "";
 			}
+			$rxn->{pegs} =~ s/\|/ or /g;
 			if ($rxn =~ m/rxn\d+/) {
 				push(@{$reactions},[
 					$rxn->{REACTION},
@@ -79,13 +80,13 @@ for (my $m=0; $m < @{$models}; $m++) {
 			}
 		}
 		if (@{$reactions} > 100) {
+			print "Loading ".$model->{id}."!\n";
 			#Query biomass table and get biomass reaction equation
 			$select = "SELECT * FROM ModelDB.BIOMASS WHERE id = ?";
 			my $bios = $db->selectall_arrayref($select, { Slice => {
 				id => 1,
 				equation => 1
 			}}, $model->{biomassReaction});
-			print STDERR "Biomass equation:".$model->{biomassReaction}.":".$bios->[0]->{id}.":".$bios->[0]->{equation}."\n\n";
 			my $biomass = $bios->[0]->{equation};
 			#Load model to KBase
 			if (defined($biomass)) {
