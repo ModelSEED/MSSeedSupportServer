@@ -69,8 +69,10 @@ for (my $m=0; $m < @{$models}; $m++) {
 			if ($rxn->{pegs} !~ m/peg\.\d+/) {
 				$rxn->{pegs} = "peg.0";
 			}
-			$rxn->{pegs} =~ s/\|/ or /g;
-			$rxn->{pegs} =~ s/+/ and /g;
+			$rxn->{pegs} = "(".$rxn->{pegs}.")";
+			$rxn->{pegs} =~ s/\|/) or (/g;
+			my $array = [split(/\+/,$rxn->{pegs})];
+			$rxn->{pegs} =~ join(" and ",@{$array});
 			if ($rxn->{REACTION} =~ m/rxn\d+/) {
 				push(@{$reactions},[
 					$rxn->{REACTION},
