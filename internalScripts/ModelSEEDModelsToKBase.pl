@@ -72,7 +72,7 @@ for (my $m=0; $m < @{$models}; $m++) {
 			$rxn->{pegs} = "(".$rxn->{pegs}.")";
 			$rxn->{pegs} =~ s/\|/) or (/g;
 			my $array = [split(/\+/,$rxn->{pegs})];
-			$rxn->{pegs} =~ join(" and ",@{$array});
+			$rxn->{pegs} = join(" and ",@{$array});
 			if ($rxn->{REACTION} =~ m/rxn\d+/) {
 				push(@{$reactions},[
 					$rxn->{REACTION},
