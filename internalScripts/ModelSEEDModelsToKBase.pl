@@ -70,7 +70,7 @@ for (my $m=0; $m < @{$models}; $m++) {
 				$rxn->{pegs} = "";
 			}
 			$rxn->{pegs} =~ s/\|/ or /g;
-			if ($rxn =~ m/rxn\d+/) {
+			if ($rxn->{REACTION} =~ m/rxn\d+/) {
 				push(@{$reactions},[
 					$rxn->{REACTION},
 					$rxn->{directionality},
