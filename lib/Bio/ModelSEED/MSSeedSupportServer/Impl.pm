@@ -375,6 +375,71 @@ sub _addBiomass {
     }
 }
 
+sub _rxndb {
+	my ($self) = @_;
+	if (!defined($self->{_rxndb})) {
+		my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+		$self->{_rxndb} = {};
+		my $select = "SELECT * FROM ModelDB.REACTION;";
+		my $rxns = $db->selectall_arrayref($select, { Slice => {
+			_id => 1,
+			abbrev => 1,
+			abstractReaction => 1,
+			code => 1,
+			definition => 1,
+			deltaG => 1,
+			deltaGErr => 1,
+			enzyme => 1,
+			equation => 1,
+			id => 1,
+			name => 1,
+			reversibility => 1,
+			status => 1,
+			structuralCues => 1,
+			thermoReversibility => 1,
+			transportedAtoms => 1,
+		} });
+		for (my $i=0; $i < @{$rxns}; $i++) {
+			$self->{_rxndb}->{$rxns->[$i]->{id}} = $rxns->[$i]
+		}
+		$db->disconnect();
+	}
+	return $self->{_rxndb};
+}
+
+sub _cpddb {
+	my ($self) = @_;
+	if (!defined($self->{_cpddb})) {
+		my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+		$self->{_cpddb} = {};
+		my $select = "SELECT * FROM ModelDB.COMPOUND;";
+		my $cpds = $db->selectall_arrayref($select, { Slice => {
+			_id => 1,
+			abbrev => 1,
+			abstractCompound => 1,
+			charge => 1,
+			deltaG => 1,
+			deltaGErr => 1,
+			formula => 1,
+			id => 1,
+			mass => 1,
+			name => 1,
+			owner => 1,
+			pKa => 1,
+			pKb => 1,
+			public => 1,
+			scope => 1,
+			stringcode => 1,
+			structuralCues => 1,
+		} });
+		for (my $i=0; $i < @{$cpds}; $i++) {
+			$self->{_cpddb}->{$cpds->[$i]->{id}} = $cpds->[$i]
+		}
+		$db->disconnect();
+	}
+	return $self->{_cpddb};
+}
+
 sub _write_excel_file {
 	my ($self,$db,$model,$owner) = @_;
 	my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$model."/0/";
@@ -384,7 +449,15 @@ sub _write_excel_file {
 	my $cpdtbl = [];
 	my $rxntbl = [];
 	my $ftrtbl = [];
-	$select = "SELECT * FROM ModelDB.REACTION_MODEL WHERE MODEL = ?";
+	my $headingTranslation = {
+		ID => 0,
+		TYPE => 1,
+		ROLES => 2,
+		"MIN LOCATION" => 3,
+		"MAX LOCATION" => 4,
+		DIRECTION => 5
+	};
+	my $select = "SELECT * FROM ModelDB.REACTION_MODEL WHERE MODEL = ?";
 	my $rxns = $db->selectall_arrayref($select, { Slice => {
 		directionality => 1,
 		compartment => 1,
@@ -395,8 +468,8 @@ sub _write_excel_file {
 	for (my $i=0; $i < @{$rxns}; $i++) {
 		my $rxn = $rxns->[$i];
 		my $rxnrow = [$rxn->{REACTION},"","","","",$rxn->{compartment},"",$rxn->{pegs}];
-		if (defined($rxndb->{$rxn->{REACTION}})) {
-			my $rxndata = $rxndb->{$rxn->{REACTION}};
+		if (defined($self->_rxndb()->{$rxn->{REACTION}})) {
+			my $rxndata = $self->_rxndb()->{$rxn->{REACTION}};
 			my $dir = $rxn->{directionality};
 			$rxnrow->[1] = $rxndata->{name};
 			$rxnrow->[2] = $rxndata->{equation};
@@ -422,8 +495,8 @@ sub _write_excel_file {
 	}
 	foreach my $cpd (keys(%{$cpdhash})) {
 		my $cpdrow = [$cpd,"","","","","",join("|",keys(%{$cpdhash->{$cpd}}))];
-		if (defined($cpddb->{$cpd})) {
-			my $cpddata = $cpddb->{$cpd};
+		if (defined($self->_cpddb()->{$cpd})) {
+			my $cpddata = $self->_cpddb()->{$cpd};
 			$cpdrow->[1] = $cpddata->{name};
 			$cpdrow->[2] = $cpddata->{abbrev};
 			$cpdrow->[3] = $cpddata->{formula};
