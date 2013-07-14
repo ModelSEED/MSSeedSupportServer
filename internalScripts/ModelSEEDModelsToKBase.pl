@@ -65,12 +65,18 @@ for (my $m=0; $m < @{$models}; $m++) {
 		} }, $model->{id});
 		for (my $i=0; $i < @{$rxns}; $i++) {
 			my $rxn = $rxns->[$i];
-			push(@{$reactions},[
-				$rxn->{REACTION},
-				$rxn->{directionality},
-				$rxn->{compartment},
-				$rxn->{pegs}
-			]);
+			$rxn->{pegs} =~ s/\|/ or /g;
+			if ($rxn->{pegs} !~ m/peg\.\d+/) {
+				$rxn->{pegs} = "";
+			}
+			if ($rxn =~ m/rxn\d+/) {
+				push(@{$reactions},[
+					$rxn->{REACTION},
+					$rxn->{directionality},
+					$rxn->{compartment},
+					$rxn->{pegs}
+				]);
+			}
 		}
 		if (@{$reactions} > 100) {
 			#Query biomass table and get biomass reaction equation
