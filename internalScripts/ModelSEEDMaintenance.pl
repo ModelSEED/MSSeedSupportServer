@@ -69,6 +69,32 @@ sub msserv {
 
 sub loop {
 	my($self) = @_;
+	my $objs = $self->wsserv()->list_workspace_objects({
+		workspace => "ModelSEEDModels",
+		type => "Model",
+		auth => $self->params("auth")
+	});
+	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+	my $select = "SELECT * FROM ModelDB.MODEL";
+	my $models = $db->selectall_arrayref($select, { Slice => {
+		_id => 1,
+		source => 1,
+		status => 1,
+		genome => 1,
+		id => 1,
+		owner => 1,
+		name => 1,
+	} });
+	my $modelhash = {};
+	for (my $i=0; $i < @{$models}; $i++) {
+		$modelhash->{$models->[$i]->{id}} = $models->[$i];
+	}
+	for (my $i=0; $i < @{$objs}; $i++) {
+		my $obj = $objs->[$i];
+		if ($obj->[4] eq "queue_gapfill_model" || $obj->[4] eq "genome_to_fbamodel") {
+			$self->loadModel($modelhash->{$obj->[0]});
+		}
+	}
 	while (1) {
 		print "New loop!\n";
 		$self->work();
