@@ -62,7 +62,7 @@ sub wsserv {
 sub msserv {
 	my($self) = @_;
 	if (!defined($self->{_msserv})) {
-		$self->{_msserv} = Bio::KBase::MSSeedSupportServer::Client->new($self->params("ms-url"));	
+		$self->{_msserv} = Bio::ModelSEED::MSSeedSupportServer::Client->new($self->params("ms-url"));	
 	}
 	return $self->{_msserv};
 }
