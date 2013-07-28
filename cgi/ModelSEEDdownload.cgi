@@ -38,14 +38,14 @@ if (defined($cgi->param('biochemistry'))) {
 		print STDERR "TEST6\n";
 		my $excelfile = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$modelid."/0/excel.xls";
 		my $data = loadExcelFile($excelfile);
-		print "Content-Type: application/vnd.ms-excel\nContent-Disposition: attachment; filename=".$modelid.".xls;\nTEST\n";
-		print STDERR "Content-Type: application/vnd.ms-excel\nContent-Disposition: attachment; filename=".$modelid.".xls;\n".$data;
+		print "Content-Type: application/vnd.ms-excel\nContent-Disposition: attachment; filename=\"".$modelid.".xls\";\n\n".$data."\n";
+		#print STDERR "Content-Type: application/vnd.ms-excel\nContent-Disposition: attachment; filename=".$modelid.".xls;\n".$data;
 	} elsif ($cgi->param('file') eq "SBML") {
 		print STDERR "TEST7\n";
 		my $sbmlfile = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$modelid."/0/model.sbml";
 		my $data = loadSBMLFile($sbmlfile);
-		print "Content-Type: application/sbml+xml\nContent-Disposition: attachment; filename=".$modelid.".xml;\nTEST\n";
-		print STDERR "Content-Type: application/sbml+xml\nContent-Disposition: attachment; filename=".$modelid.".xml;\n".$data;
+		print "Content-Type: application/sbml+xml\nContent-Disposition: attachment; filename=\"".$modelid.".xml\";\n\n".$data."\n";
+		#print STDERR "Content-Type: application/sbml+xml\nContent-Disposition: attachment; filename=".$modelid.".xml;\n".$data;
 	} else {
 		print STDERR "TEST8\n";
 		print CGI::header();
