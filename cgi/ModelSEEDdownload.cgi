@@ -12,12 +12,12 @@ BEGIN {
 
 use strict;
 use CGI;
-
+$|=1;
 print CGI::header();
 print CGI::start_html();
 print '<pre>Test</pre>';
 print CGI::end_html();
-
+1;
 #use DBI;
 #
 #$|=1;
