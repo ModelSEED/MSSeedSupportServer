@@ -1,3 +1,15 @@
+#!/vol/rast-bcr/2010-1124/linux-rhel5-x86_64/bin/perl
+
+BEGIN {
+    @INC = qw(
+		/vol/rast-bcr/2010-1124/linux-rhel5-x86_64/lib/perl5/site_perl/5.12.2/x86_64-linux
+		/vol/rast-bcr/2010-1124/linux-rhel5-x86_64/lib/perl5/site_perl/5.12.2
+		/vol/rast-bcr/2010-1124/linux-rhel5-x86_64/lib/perl5/site_perl
+		/vol/rast-bcr/2010-1124/linux-rhel5-x86_64/lib/perl5/5.12.2/x86_64-linux
+		/vol/rast-bcr/2010-1124/linux-rhel5-x86_64/lib/perl5/5.12.2
+	);
+}
+
 use strict;
 use warnings;
 no warnings 'once';
