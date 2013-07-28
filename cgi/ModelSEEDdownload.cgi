@@ -11,8 +11,6 @@ BEGIN {
 }
 
 use strict;
-use warnings;
-no warnings 'once';
 use CGI;
 use DBI;
 
