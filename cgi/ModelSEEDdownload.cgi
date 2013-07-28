@@ -31,7 +31,6 @@ if (defined($cgi->param('biochemistry'))) {
 	    print CGI::start_html();
 	    print '<pre>No file type selected for download</pre>';
 	    print CGI::end_html();
-	    exit();
 	}
 	my $modelid = $cgi->param('model');
 	my $owner = modelOwner($modelid);
@@ -40,20 +39,19 @@ if (defined($cgi->param('biochemistry'))) {
 		my $excelfile = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$modelid."/0/excel.xls";
 		my $data = loadExcelFile($excelfile);
 		print "Content-Type: application/vnd.ms-excel\nContent-Disposition: attachment; filename=".$modelid.".xls;\n".$data;
-		exit();
+		print STDERR "Content-Type: application/vnd.ms-excel\nContent-Disposition: attachment; filename=".$modelid.".xls;\n".$data;
 	} elsif ($cgi->param('file') eq "SBML") {
 		print STDERR "TEST7\n";
 		my $sbmlfile = "/vol/model-dev/MODEL_DEV_DB/Models2/".$owner."/".$modelid."/0/model.sbml";
 		my $data = loadSBMLFile($sbmlfile);
 		print "Content-Type: application/sbml+xml\nContent-Disposition: attachment; filename=".$modelid.".xml;\n".$data;
-		exit();
+		print STDERR "Content-Type: application/sbml+xml\nContent-Disposition: attachment; filename=".$modelid.".xml;\n".$data;
 	} else {
 		print STDERR "TEST8\n";
 		print CGI::header();
 	    print CGI::start_html();
 	    print '<pre>Requested type not recognized!</pre>';
 	    print CGI::end_html();
-	    exit();
 	}
 	print STDERR "TEST10\n";
 } else {
@@ -62,7 +60,6 @@ if (defined($cgi->param('biochemistry'))) {
     print CGI::start_html();
     print '<pre>No model selected for download</pre>';
     print CGI::end_html();
-	exit();
 }
 print STDERR "TEST11\n";
 
