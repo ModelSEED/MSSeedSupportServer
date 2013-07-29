@@ -6,8 +6,7 @@ use DBI;
 use File::Path;
 use Spreadsheet::WriteExcel;
 
-my $overwrite = $ARGV[0];
-
+my $mod = $ARGV[0];
 my $headingTranslation = {
 	ID => 0,
 	TYPE => 1,
@@ -68,8 +67,12 @@ for (my $i=0; $i < @{$cpds}; $i++) {
 	$cpddb->{$cpds->[$i]->{id}} = $cpds->[$i]
 }
 
+my $models = [];
 $select = "SELECT * FROM ModelDB.MODEL;";
-my $models = $db->selectall_arrayref($select, { Slice => {
+if (defined($mod)) {
+	$select = "SELECT * FROM ModelDB.MODEL WHERE id = ?;";
+}
+$models = $db->selectall_arrayref($select, { Slice => {
 	_id => 1,
 	source => 1,
 	status => 1,
@@ -77,7 +80,8 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 	id => 1,
 	owner => 1,
 	name => 1,
-} });
+	biomassReaction => 1
+} },$mod);
 
 for (my $m=0; $m < @{$models}; $m++) {
 	my $model = $models->[$m];

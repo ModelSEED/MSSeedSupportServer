@@ -9,10 +9,8 @@ use Bio::KBase::workspaceService::Client;
 use Bio::KBase::fbaModelServices::Client;
 
 my $config = $ARGV[0];
+my $mod = $ARGV[1];
 my $overwrite = 0;
-if (defined($ARGV[1])) {
-	$overwrite = $ARGV[1];
-}
 if (!defined($config)) {
 	print STDERR "No config file provided!\n";
 	exit(-1);
@@ -25,9 +23,13 @@ if (!-e $config) {
 my $c = Config::Simple->new();
 $c->read($config);
 
+my $models = [];
 my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
 my $select = "SELECT * FROM ModelDB.MODEL;";
-my $models = $db->selectall_arrayref($select, { Slice => {
+if (defined($mod)) {
+	$select = "SELECT * FROM ModelDB.MODEL WHERE id = ?;";
+}
+$models = $db->selectall_arrayref($select, { Slice => {
 	_id => 1,
 	source => 1,
 	status => 1,
@@ -35,7 +37,8 @@ my $models = $db->selectall_arrayref($select, { Slice => {
 	id => 1,
 	owner => 1,
 	name => 1,
-} });
+	biomassReaction => 1
+} },$mod);
 
 my $wserv = Bio::KBase::workspaceService::Client->new($c->param("kbclientconfig.wsurl"));
 my $fbaserv = Bio::KBase::fbaModelServices::Client->new($c->param("kbclientconfig.fbaurl"));
