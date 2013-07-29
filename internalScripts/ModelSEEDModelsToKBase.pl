@@ -106,7 +106,8 @@ for (my $m=0; $m < @{$models}; $m++) {
 						reactions => $reactions,
 						model => $model->{id},
 						workspace => "ModelSEEDModels",
-						auth => $c->param("kbclientconfig.auth")
+						auth => $c->param("kbclientconfig.auth"),
+						ignore_errors => 1
 					});
 				}; print STDERR $@ if $@;
 			}
