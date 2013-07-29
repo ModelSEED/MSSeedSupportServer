@@ -29,8 +29,8 @@ my $genomes = $wserv->list_workspace_objects({
 });
 
 open (my $fh, ">", $filename) || die "Couldn't open $filename: $!";
-#for (my $i=0; $i < @{$genomes}; $i++) {
-for (my $i=0; $i < 10; $i++) {
+for (my $i=0; $i < @{$genomes}; $i++) {
+#for (my $i=0; $i < 10; $i++) {
 	my $genome = $genomes->[$i]->[0];
 	my $obj = $wserv->get_object({
 		id => $genome,
