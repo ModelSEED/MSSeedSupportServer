@@ -69,32 +69,6 @@ sub msserv {
 
 sub loop {
 	my($self) = @_;
-	my $objs = $self->wsserv()->list_workspace_objects({
-		workspace => "ModelSEEDModels",
-		type => "Model",
-		auth => $self->params("auth")
-	});
-	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
-	my $select = "SELECT * FROM ModelDB.MODEL";
-	my $models = $db->selectall_arrayref($select, { Slice => {
-		_id => 1,
-		source => 1,
-		status => 1,
-		genome => 1,
-		id => 1,
-		owner => 1,
-		name => 1,
-	} });
-	my $modelhash = {};
-	for (my $i=0; $i < @{$models}; $i++) {
-		$modelhash->{$models->[$i]->{id}} = $models->[$i];
-	}
-	for (my $i=0; $i < @{$objs}; $i++) {
-		my $obj = $objs->[$i];
-		if ($obj->[4] eq "queue_gapfill_model" || $obj->[4] eq "genome_to_fbamodel") {
-			$self->loadModel($modelhash->{$obj->[0]});
-		}
-	}
 	while (1) {
 		print "New loop!\n";
 		$self->work();
@@ -104,6 +78,34 @@ sub loop {
 
 sub work {
 	my($self) = @_;
+	my $models = $self->retreiveModels();
+	my $objs = $self->wsserv()->list_workspace_objects({
+		workspace => "ModelSEEDModels",
+		type => "Model",
+		auth => $self->params("auth")
+	});
+	my $mdlhash = {};
+	my $kbmdlhash = {};
+	for (my $i=0; $i < @{$objs}; $i++) {
+		my $obj = $objs->[$i];
+		$kbmdlhash->{$obj->[0]} = $obj;
+	}
+	open(STATUS, "> /homes/chenry/public_html/ModelStatus.html") || die "could not open model status file!";
+	print STATUS '<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">'."\n";
+	print STATUS '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>ModelSEED Status</title>'."\n";
+	print STATUS "</head><body><table></body></html>\n";
+	print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>In KBase</th></tr>\n";
+	for (my $i=0; $i < @{$models}; $i++) {
+		$mdlhash->{$models->[$i]->{id}} = $models->[$i];
+		if (defined($kbmdlhash->{$models->[$i]->{id}})) {
+			$models->[$i]->{inkbase} = 1;
+		} else {
+			$models->[$i]->{inkbase} = 1;
+		}
+		print STATUS "<tr><td>".$models->[$i]->{id}."</td><td>".$models->[$i]->{genome}."</td><td>".$models->[$i]->{owner}."</td><td>".$models->[$i]->{status}."</td><td>".$models->[$i]->{reactions}."</td><td>".$models->[$i]->{biomassReaction}."</td><td>".$models->[$i]->{inkbase}."</td><td>".$models->[$i]->{gapFillReactions}."</td></tr>\n"; 
+	}
+	print STATUS "</table></body></html>\n";
+	close(STATUS);
 	#Loading genomes for queued models
 	my $models = $self->retreiveModels("-2");
 	print @{$models}." models!\n";
@@ -432,8 +434,28 @@ sub updateModelStatus {
 
 sub retreiveModels {
 	my($self,$status) = @_;
+	if (defined($status)) {
+		my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+		my $select = "SELECT * FROM ModelDB.MODEL WHERE status = ?";
+		my $models = $db->selectall_arrayref($select, { Slice => {
+			_id => 1,
+			source => 1,
+			status => 1,
+			genome => 1,
+			id => 1,
+			owner => 1,
+			name => 1,
+			biomassReaction => 1,
+			autoCompleteReactions => 1,
+			autoCompleteMedia => 1,
+			reactions => 1,
+			associatedGenes => 1,
+			gapFillReactions => 1,
+		} }, $status);
+		return $models;
+	}
 	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
-	my $select = "SELECT * FROM ModelDB.MODEL WHERE status = ?";
+	my $select = "SELECT * FROM ModelDB.MODEL";
 	my $models = $db->selectall_arrayref($select, { Slice => {
 		_id => 1,
 		source => 1,
@@ -442,8 +464,14 @@ sub retreiveModels {
 		id => 1,
 		owner => 1,
 		name => 1,
-	} }, $status);
-	return $models;
+		biomassReaction => 1,
+		autoCompleteReactions => 1,
+		autoCompleteMedia => 1,
+		reactions => 1,
+		associatedGenes => 1,
+		gapFillReactions => 1,
+	} });
+	return $models;	
 }
 
 1;
