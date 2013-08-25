@@ -94,8 +94,8 @@ sub work {
 	open(STATUS, "> /homes/chenry/public_html/ModelStatus.html") || die "could not open model status file!";
 	print STATUS '<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">'."\n";
 	print STATUS '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>ModelSEED Status</title>'."\n";
-	my $datatime = DateTime->now()->datetime();
-	print STATUS "</head><body><p>Date of last update: ".$datatime."</p><br><table></body></html>\n";
+	my $datetime = DateTime->now()->datetime();
+	print STATUS "</head><body><p>Date of last update: ".$datetime."</p><br><table></body></html>\n";
 	print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>In KBase</th><th>Gapfill reactions</th><th>Mod date</th></tr>\n";
 	for (my $i=0; $i < @{$models}; $i++) {
 		$mdlhash->{$models->[$i]->{id}} = $models->[$i];
