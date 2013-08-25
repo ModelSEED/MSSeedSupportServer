@@ -5,6 +5,7 @@ use Config::Simple;
 use JSON::XS;
 use File::Temp qw(tempfile);
 use LWP::Simple;
+use DateTime;
 use Bio::KBase::workspaceService::Client;
 use Bio::KBase::fbaModelServices::Client;
 use Bio::ModelSEED::MSSeedSupportServer::Client;
@@ -93,8 +94,9 @@ sub work {
 	open(STATUS, "> /homes/chenry/public_html/ModelStatus.html") || die "could not open model status file!";
 	print STATUS '<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">'."\n";
 	print STATUS '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>ModelSEED Status</title>'."\n";
-	print STATUS "</head><body><table></body></html>\n";
-	print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>In KBase</th></tr>\n";
+	my $datatime = DateTime->now()->datetime();
+	print STATUS "</head><body><p>Date of last update: ".$datatime."</p><br><table></body></html>\n";
+	print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>In KBase</th><th>Gapfill reactions</th><th>Mod date</th></tr>\n";
 	for (my $i=0; $i < @{$models}; $i++) {
 		$mdlhash->{$models->[$i]->{id}} = $models->[$i];
 		if (defined($kbmdlhash->{$models->[$i]->{id}})) {
@@ -102,12 +104,13 @@ sub work {
 		} else {
 			$models->[$i]->{inkbase} = 1;
 		}
-		print STATUS "<tr><td>".$models->[$i]->{id}."</td><td>".$models->[$i]->{genome}."</td><td>".$models->[$i]->{owner}."</td><td>".$models->[$i]->{status}."</td><td>".$models->[$i]->{reactions}."</td><td>".$models->[$i]->{biomassReaction}."</td><td>".$models->[$i]->{inkbase}."</td><td>".$models->[$i]->{gapFillReactions}."</td></tr>\n"; 
+		$datetime = DateTime->from_epoch(epoch => $models->[$i]->{modificationDate})->datetime();
+		print STATUS "<tr><td>".$models->[$i]->{id}."</td><td>".$models->[$i]->{genome}."</td><td>".$models->[$i]->{owner}."</td><td>".$models->[$i]->{status}."</td><td>".$models->[$i]->{reactions}."</td><td>".$models->[$i]->{biomassReaction}."</td><td>".$models->[$i]->{inkbase}."</td><td>".$models->[$i]->{gapFillReactions}."</td><td>".$datetime."</td></tr>\n"; 
 	}
 	print STATUS "</table></body></html>\n";
 	close(STATUS);
 	#Loading genomes for queued models
-	my $models = $self->retreiveModels("-2");
+	$models = $self->retreiveModels("-2");
 	print @{$models}." models!\n";
 	for (my $i=0; $i < @{$models};$i++) {
 		my $model = $models->[$i];
@@ -358,6 +361,7 @@ sub gapfillModel {
 	my($self,$model) = @_;
 	eval {
 		$self->fbaserv()->queue_gapfill_model({
+			solver => "CPLEX",
 			model => $model->{id},
 			integrate_solution => 1,
 			workspace => "ModelSEEDModels",
@@ -429,13 +433,24 @@ sub updateModelStatus {
 	my($self,$status,$model) = @_;
 	my $statement = "UPDATE ModelDB.MODEL SET status = '".$status."' WHERE id = '".$model->{id}."';";
 	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+	while (!defined($db)) {
+		sleep(15);
+		print "Database connection failed! Attempting reconnect!\n";
+		$db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+	}
 	$db->do($statement);
+	$db->disconnect;
 }
 
 sub retreiveModels {
 	my($self,$status) = @_;
 	if (defined($status)) {
 		my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+		while (!defined($db)) {
+			sleep(15);
+			print "Database connection failed! Attempting reconnect!\n";
+			$db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+		}
 		my $select = "SELECT * FROM ModelDB.MODEL WHERE status = ?";
 		my $models = $db->selectall_arrayref($select, { Slice => {
 			_id => 1,
@@ -451,10 +466,17 @@ sub retreiveModels {
 			reactions => 1,
 			associatedGenes => 1,
 			gapFillReactions => 1,
+			modificationDate => 1
 		} }, $status);
+		$db->disconnect;
 		return $models;
 	}
 	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+	while (!defined($db)) {
+		sleep(15);
+		print "Database connection failed! Attempting reconnect!\n";
+		$db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306",$self->params("dbuser"));
+	}
 	my $select = "SELECT * FROM ModelDB.MODEL";
 	my $models = $db->selectall_arrayref($select, { Slice => {
 		_id => 1,
@@ -470,7 +492,9 @@ sub retreiveModels {
 		reactions => 1,
 		associatedGenes => 1,
 		gapFillReactions => 1,
+		modificationDate => 1
 	} });
+	$db->disconnect;
 	return $models;	
 }
 
