@@ -17,6 +17,8 @@ our %return_counts = (
         'get_user_info' => 1,
         'authenticate' => 1,
         'load_model_to_modelseed' => 1,
+        'create_plantseed_job' => 1,
+        'get_plantseed_genomes' => 1,
         'version' => 1,
 );
 
@@ -30,6 +32,8 @@ sub _build_valid_methods
         'get_user_info' => 1,
         'authenticate' => 1,
         'load_model_to_modelseed' => 1,
+        'create_plantseed_job' => 1,
+        'get_plantseed_genomes' => 1,
         'version' => 1,
     };
     return $methods;

@@ -118,4 +118,71 @@ module MSSeedSupportServer {
         Loads the input model to the model seed database
     */
     funcdef load_model_to_modelseed(load_model_to_modelseed_params params) returns (int success);
+
+	/* Input parameters for the "create_plantseed_job" function.
+	
+		string username - username of owner of new genome
+		string password - password of owner of new genome
+		string fasta - fasta file data
+		
+	*/
+	typedef structure {
+		string username;
+		string password;
+		string fasta;
+		string contigid;
+		string source;
+		string genetic_code;
+		string domain;
+		string scientific_name;
+    } create_plantseed_job_params;
+    /* Output for the "create_plantseed_job" function.
+	
+		string owner - owner of the plantseed genome
+		string genomeid - ID of the plantseed genome
+		string contigid - ID of the contigs for plantseed genome
+		
+	*/
+	typedef structure {
+		string owner;
+		string genome;
+		string contigs;
+		string model;
+		string status;
+    } plantseed_job_data;
+    /*
+        Creates a plant seed job for the input fasta file
+    */
+    funcdef create_plantseed_job(create_plantseed_job_params params) returns (plantseed_job_data output);
+	
+	/* Input parameters for the "get_plantseed_genomes" function.
+	
+		string username - username of owner of new genome
+		string password - password of owner of new genome
+		
+	*/
+	typedef structure {
+		string username;
+		string password;
+    } get_plantseed_genomes_params;
+    /* Output for the "get_plantseed_genomes" function.
+	
+		string owner - owner of the plantseed genome
+		string genome - ID of the plantseed genome
+		string contigs - ID of the contigs for plantseed genome
+		string model - ID of model for PlantSEED genome
+		string status - status of plantseed genome
+		
+	*/
+	typedef structure {
+		string owner;
+		string genome;
+		string contigs;
+		string model;
+		string status;
+    } plantseed_genomes;
+    /*
+        Retrieves a list of plantseed genomes owned by user
+    */
+    funcdef get_plantseed_genomes(get_plantseed_genomes_params params) returns (list<plantseed_genomes> output);
 };

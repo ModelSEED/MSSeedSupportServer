@@ -27,6 +27,9 @@ MSSeedSupportServer
 use Spreadsheet::WriteExcel;
 use DBI;
 use File::Path;
+use SOAP::Lite;
+use Bio::KBase::fbaModelServices::Client;
+use Bio::KBase::workspaceService::Client;
 sub _setContext {
 	my ($self,$params) = @_;
     if (defined($params->{username}) && length($params->{username}) > 0) {
@@ -711,6 +714,16 @@ sub _roles_of_function {
     return [split(/\s*;\s+|\s+[\@\/]\s+/,$function)];
 }
 
+sub _fbaserv {
+    my ($self) = @_;
+    return Bio::KBase::fbaModelServices::Client->new('http://140.221.85.73:4043');
+}
+
+sub _wsserv {
+    my ($self) = @_;
+    return Bio::KBase::workspaceService::Client->new('http://www.kbase.us/services/workspace_service/');
+}
+
 sub _validateargs {
 	my ($self,$args,$mandatoryArguments,$optionalArguments,$substitutions) = @_;
 	if (!defined($args)) {
@@ -1311,6 +1324,234 @@ sub load_model_to_modelseed
 
 
 
+=head2 create_plantseed_job
+
+  $success = $obj->create_plantseed_job($params)
+
+=over 4
+
+=item Parameter and return types
+
+=begin html
+
+<pre>
+$params is a create_plantseed_job_params
+$success is an int
+create_plantseed_job_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+	fasta has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+$params is a create_plantseed_job_params
+$success is an int
+create_plantseed_job_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+	fasta has a value which is a string
+
+
+=end text
+
+
+
+=item Description
+
+Creates a plant seed job for the input fasta file
+
+=back
+
+=cut
+
+sub create_plantseed_job
+{
+    my $self = shift;
+    my($params) = @_;
+
+    my @_bad_arguments;
+    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
+    if (@_bad_arguments) {
+	my $msg = "Invalid arguments passed to create_plantseed_job:\n" . join("", map { "\t$_\n" } @_bad_arguments);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+							       method_name => 'create_plantseed_job');
+    }
+
+    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
+    my($success);
+    #BEGIN create_plantseed_job
+    $self->_setContext($params);
+    $params = $self->_validateargs($params,["fasta"],{
+    	contigid => undef,
+    	source => undef,
+    	genetic_code => undef,
+    	domain => undef,
+    	scientific_name => undef
+    });
+    if (!defined($self->_userobj())) {
+    	$self->_error("Must be logged in to create PlantSEED job!","create_plantseed_job");
+    }
+    my $auth = join("\n",@{$self->_load_single_column_file("/vol/model-prod/plantseed-auth")});  
+    my $contig = $self->_fbaserv()->fasta_to_contigs({
+    	contigid => $params->{contigid},
+		fasta => $params->{fasta},
+		workspace => "Private_PlantSEED",
+		auth => $auth,
+		source => $params->{source},
+		genetic_code => $params->{genetic_code},
+		domain => $params->{domain},
+		scientific_name => $params->{scientific_name}
+    });
+	my $service_url = "http://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";
+	my $proxy = SOAP::Lite->uri('http://www.soaplite.com/Scripts')->proxy($service_url);
+	my $r = $proxy->register_genome("7777777");
+	if ($r->fault) {
+	    $self->_error("Failed to register $PlantRast_GenomeBase with ACH: ".$r->faultcode .":".$r->faultstring);
+	}
+    my $genomeid = "7777777".$r->result();
+    my $genome = $self->_fbaserv()->contigs_to_genome({
+    	contigid => $contig->[0],
+		contig_workspace => "Private_PlantSEED",
+		workspace => "Private_PlantSEED",
+		genomeid => "user.".$self->_userobj()->_id().".".$genomeid,
+		auth => $auth,
+    });
+    return {
+    	contigid => $contig->[0],
+    	genomeid => $genomeid,
+    	owner => $self->_userobj()->login()
+    };
+    #END create_plantseed_job
+    my @_bad_returns;
+    (!ref($success)) or push(@_bad_returns, "Invalid type for return variable \"success\" (value was \"$success\")");
+    if (@_bad_returns) {
+	my $msg = "Invalid returns passed to create_plantseed_job:\n" . join("", map { "\t$_\n" } @_bad_returns);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+							       method_name => 'create_plantseed_job');
+    }
+    return($success);
+}
+
+
+
+
+=head2 get_plantseed_genomes
+
+  $output = $obj->get_plantseed_genomes($params)
+
+=over 4
+
+=item Parameter and return types
+
+=begin html
+
+<pre>
+$params is a get_plantseed_genomes_params
+$output is a reference to a list where each element is a plantseed_genomes
+get_plantseed_genomes_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+plantseed_genomes is a reference to a hash where the following keys are defined:
+	owner has a value which is a string
+	genome has a value which is a string
+	contigs has a value which is a string
+	model has a value which is a string
+	status has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+$params is a get_plantseed_genomes_params
+$output is a reference to a list where each element is a plantseed_genomes
+get_plantseed_genomes_params is a reference to a hash where the following keys are defined:
+	username has a value which is a string
+	password has a value which is a string
+plantseed_genomes is a reference to a hash where the following keys are defined:
+	owner has a value which is a string
+	genome has a value which is a string
+	contigs has a value which is a string
+	model has a value which is a string
+	status has a value which is a string
+
+
+=end text
+
+
+
+=item Description
+
+Retrieves a list of plantseed genomes owned by user
+
+=back
+
+=cut
+
+sub get_plantseed_genomes
+{
+    my $self = shift;
+    my($params) = @_;
+
+    my @_bad_arguments;
+    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
+    if (@_bad_arguments) {
+	my $msg = "Invalid arguments passed to get_plantseed_genomes:\n" . join("", map { "\t$_\n" } @_bad_arguments);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+							       method_name => 'get_plantseed_genomes');
+    }
+
+    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
+    my($output);
+    #BEGIN get_plantseed_genomes
+    $self->_setContext($params);
+    $params = $self->_validateargs($params,["fasta"],{
+    	contigid => undef,
+    	source => undef,
+    	genetic_code => undef,
+    	domain => undef,
+    	scientific_name => undef
+    });
+    if (!defined($self->_userobj())) {
+    	$self->_error("Must be logged in to retrieve PlantSEED job!","get_plantseed_genomes");
+    }
+    my $auth = join("\n",@{$self->_load_single_column_file("/vol/model-prod/plantseed-auth")});  
+    my $objs = $self->_wsserv()->list_workspace_objects({
+    	workspace => "Private_PlantSEED",
+    	type => "Genome",
+    	auth => $auth
+    });
+    $output = [];
+    for (my $i=0; $i < @{$objs}; $i++) {
+    	if ($objs->[$i]->[0] =~ m/user\.\d+\.(.+)/) {
+	    	push(@{$output},{
+	    		owner => $self->_userobj()->login(),
+				genome => $1,
+				contigs => $objs->[$i]->[10]->{contigs},
+				status => $objs->[$i]->[10]->{status},
+	    	}); $objs->[$i];
+    	}
+    }
+    return $output;
+    #END get_plantseed_genomes
+    my @_bad_returns;
+    (ref($output) eq 'ARRAY') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
+    if (@_bad_returns) {
+	my $msg = "Invalid returns passed to get_plantseed_genomes:\n" . join("", map { "\t$_\n" } @_bad_returns);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
+							       method_name => 'get_plantseed_genomes');
+    }
+    return($output);
+}
+
+
+
+
 =head2 version 
 
   $return = $obj->version()
@@ -1624,6 +1865,138 @@ owner has a value which is a string
 genome has a value which is a string
 reactions has a value which is a reference to a list where each element is a string
 biomass has a value which is a string
+
+
+=end text
+
+=back
+
+
+
+=head2 create_plantseed_job_params
+
+=over 4
+
+
+
+=item Description
+
+Input parameters for the "create_plantseed_job" function.
+
+        string username - username of owner of new genome
+        string password - password of owner of new genome
+        string fasta - fasta file data
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+fasta has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+fasta has a value which is a string
+
+
+=end text
+
+=back
+
+
+
+=head2 get_plantseed_genomes_params
+
+=over 4
+
+
+
+=item Description
+
+Input parameters for the "get_plantseed_genomes" function.
+
+        string username - username of owner of new genome
+        string password - password of owner of new genome
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+username has a value which is a string
+password has a value which is a string
+
+
+=end text
+
+=back
+
+
+
+=head2 plantseed_genomes
+
+=over 4
+
+
+
+=item Description
+
+Output for the "get_plantseed_genomes" function.
+
+        string owner - owner of the plantseed genome
+        string genome - ID of the plantseed genome
+        string contigs - ID of the contigs for plantseed genome
+        string model - ID of model for PlantSEED genome
+        string status - status of plantseed genome
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+owner has a value which is a string
+genome has a value which is a string
+contigs has a value which is a string
+model has a value which is a string
+status has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+owner has a value which is a string
+genome has a value which is a string
+contigs has a value which is a string
+model has a value which is a string
+status has a value which is a string
 
 
 =end text
