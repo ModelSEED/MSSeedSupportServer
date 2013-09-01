@@ -1410,7 +1410,7 @@ sub create_plantseed_job
 	my $proxy = SOAP::Lite->uri('http://www.soaplite.com/Scripts')->proxy($service_url);
 	my $r = $proxy->register_genome("7777777");
 	if ($r->fault) {
-	    $self->_error("Failed to register $PlantRast_GenomeBase with ACH: ".$r->faultcode .":".$r->faultstring);
+	    $self->_error("Failed to register 7777777 with ACH: ".$r->faultcode .":".$r->faultstring);
 	}
     my $genomeid = "7777777".$r->result();
     my $genome = $self->_fbaserv()->contigs_to_genome({
