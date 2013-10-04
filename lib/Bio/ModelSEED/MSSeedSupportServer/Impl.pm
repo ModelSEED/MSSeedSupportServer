@@ -30,6 +30,7 @@ use File::Path;
 use SOAP::Lite;
 use Bio::KBase::fbaModelServices::Client;
 use Bio::KBase::workspaceService::Client;
+use Bio::KBase::AuthToken;
 sub _setContext {
 	my ($self,$params) = @_;
     if (defined($params->{username}) && length($params->{username}) > 0) {
