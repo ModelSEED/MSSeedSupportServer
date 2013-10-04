@@ -158,6 +158,10 @@ class Application(object):
                              types = [dict])
         self.rpc_service.add(impl_MSSeedSupportServer.get_plantseed_genomes, name = 'MSSeedSupportServer.get_plantseed_genomes',
                              types = [dict])
+        self.rpc_service.add(impl_MSSeedSupportServer.kblogin, name = 'MSSeedSupportServer.kblogin',
+                             types = [dict])
+        self.rpc_service.add(impl_MSSeedSupportServer.kblogin_from_token, name = 'MSSeedSupportServer.kblogin_from_token',
+                             types = [dict])
 
 
     def __call__( self, environ, start_response):

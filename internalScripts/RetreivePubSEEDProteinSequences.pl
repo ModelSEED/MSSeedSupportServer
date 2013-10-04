@@ -28,10 +28,11 @@ my $genomes = $wserv->list_workspace_objects({
 	auth => $c->param("kbclientconfig.auth")
 });
 
-open (my $fh, ">", $filename) || die "Couldn't open $filename: $!";
-for (my $i=0; $i < @{$genomes}; $i++) {
-#for (my $i=0; $i < 10; $i++) {
+#open (my $fh, ">", $filename) || die "Couldn't open $filename: $!";
+#for (my $i=0; $i < @{$genomes}; $i++) {
+for (my $i=0; $i < 10; $i++) {
 	my $genome = $genomes->[$i]->[0];
+	open (my $fh, ">", "/Users/chenry/workspace/Genomes/".$genome.".fasta");
 	my $obj = $wserv->get_object({
 		id => $genome,
 		type => "Genome",
@@ -46,8 +47,9 @@ for (my $i=0; $i < @{$genomes}; $i++) {
 			$sequence =~ s/([A-Z]{70})/$1\n/g;
 			print $fh $sequence."\n";
 		}
-	}	
+	}
+	close($fh);	
 }
-close($fh);
+#close($fh);
 	
 1;

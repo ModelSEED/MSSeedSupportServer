@@ -185,4 +185,32 @@ module MSSeedSupportServer {
         Retrieves a list of plantseed genomes owned by user
     */
     funcdef get_plantseed_genomes(get_plantseed_genomes_params params) returns (list<plantseed_genomes> output);
+	/* Input for "kblogin" function.
+	
+		string kblogin - KBase username
+		string kbpassword - KBase password
+		
+	*/
+	typedef structure {
+		string kblogin;
+		string kbpassword;
+    } kblogin_params;
+    /*
+        Login for specified kbase account
+    */
+    funcdef kblogin(kblogin_params params) returns (string authtoken);
+	
+	/* Input for "kblogin" function.
+	
+		string authtoken - KBase token
+		
+	*/
+	typedef structure {
+		string authtoken;
+    } kblogin_from_token_params;
+    /*
+        Login for specified kbase auth token
+    */
+    funcdef kblogin_from_token(kblogin_from_token_params params) returns (string login);
+			
 };

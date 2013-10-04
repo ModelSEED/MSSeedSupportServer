@@ -19,6 +19,8 @@ our %return_counts = (
         'load_model_to_modelseed' => 1,
         'create_plantseed_job' => 1,
         'get_plantseed_genomes' => 1,
+        'kblogin' => 1,
+        'kblogin_from_token' => 1,
         'version' => 1,
 );
 
@@ -34,6 +36,8 @@ sub _build_valid_methods
         'load_model_to_modelseed' => 1,
         'create_plantseed_job' => 1,
         'get_plantseed_genomes' => 1,
+        'kblogin' => 1,
+        'kblogin_from_token' => 1,
         'version' => 1,
     };
     return $methods;

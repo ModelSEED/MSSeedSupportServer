@@ -79,15 +79,15 @@ class MSSeedSupportServer:
         
     def create_plantseed_job(self, params):
         # self.ctx is set by the wsgi application class
-        # return variables are: success
+        # return variables are: output
         #BEGIN create_plantseed_job
         #END create_plantseed_job
 
         #At some point might do deeper type checking...
-        if not isinstance(success, int):
-            raise ValueError('Method create_plantseed_job return value success is not type int as required.')
+        if not isinstance(output, dict):
+            raise ValueError('Method create_plantseed_job return value output is not type dict as required.')
         # return the results
-        return [ success ]
+        return [ output ]
         
     def get_plantseed_genomes(self, params):
         # self.ctx is set by the wsgi application class
@@ -100,4 +100,28 @@ class MSSeedSupportServer:
             raise ValueError('Method get_plantseed_genomes return value output is not type list as required.')
         # return the results
         return [ output ]
+        
+    def kblogin(self, params):
+        # self.ctx is set by the wsgi application class
+        # return variables are: authtoken
+        #BEGIN kblogin
+        #END kblogin
+
+        #At some point might do deeper type checking...
+        if not isinstance(authtoken, basestring):
+            raise ValueError('Method kblogin return value authtoken is not type basestring as required.')
+        # return the results
+        return [ authtoken ]
+        
+    def kblogin_from_token(self, params):
+        # self.ctx is set by the wsgi application class
+        # return variables are: login
+        #BEGIN kblogin_from_token
+        #END kblogin_from_token
+
+        #At some point might do deeper type checking...
+        if not isinstance(login, basestring):
+            raise ValueError('Method kblogin_from_token return value login is not type basestring as required.')
+        # return the results
+        return [ login ]
         
