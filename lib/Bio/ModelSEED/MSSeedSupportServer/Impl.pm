@@ -1688,11 +1688,14 @@ sub kblogin
     #BEGIN kblogin
     $self->_setContext($params);
     $params = $self->_validateargs($params,["kblogin","kbpassword"],{});
+    print "One:".$params->{kblogin}."\t".$params->{kbpassword}."\n";
     my $token = Bio::KBase::AuthToken->new(user_id => $params->{kblogin}, password => $params->{kbpassword});
+	print "Two:".$params->{kblogin}."\t".$params->{kbpassword}."\n";
 	if (!defined($token->token())) {
     	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "KBase login failed!",
         method_name => 'kblogin');
     }
+    print "Three:".$params->{kblogin}."\t".$params->{kbpassword}."\n";
 	$authtoken = $token->token();
     #END kblogin
     my @_bad_returns;
