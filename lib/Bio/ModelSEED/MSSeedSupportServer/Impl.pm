@@ -24,6 +24,7 @@ MSSeedSupportServer
 =cut
 
 #BEGIN_HEADER
+$|=1;
 use Spreadsheet::WriteExcel;
 use DBI;
 use File::Path;
