@@ -1413,18 +1413,23 @@ sub create_plantseed_job
     if (!defined($self->_userobj())) {
     	$self->_error("Must be logged in to create PlantSEED job!","create_plantseed_job");
     }
+    print "test1\n";
     #Getting KBase auth token for PlantSEED workspace
     my $auth = join("\n",@{$self->_load_single_column_file("/vol/model-prod/plantseed-auth")});
     #Getting new genome ID for PlantSEED genome
+    print "test2\n";
     my $service_url = "http://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";
 	my $proxy = SOAP::Lite->uri('http://www.soaplite.com/Scripts')->proxy($service_url);
 	my $r = $proxy->register_genome("7777777");
+	print "test4\n";
 	if ($r->fault) {
 	    $self->_error("Failed to register 7777777 with ACH: ".$r->faultcode .":".$r->faultstring);
 	}
+    print "test3\n";
     my $genomeid = "7777777".$r->result();
     my $object;
     if ($params->{proteins}) {
+    	print "test5\n";
     	$object = $self->_fbaserv()->fasta_to_ProteinSet({
     		uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{_id},
     		fasta => $params->{fasta},
@@ -1435,6 +1440,7 @@ sub create_plantseed_job
     		source => "PlantSEED",
     		type => "Plant"
     	});
+    	print "test6\n";
     	$object = $self->_fbaserv()->ProteinSet_to_Genome({
     		ProteinSet_uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{_id},
     		ProteinSet_ws => "Private_PlantSEED",
@@ -1445,7 +1451,9 @@ sub create_plantseed_job
     		domain => "Plant",
     		genetic_code => 11
     	});
+    	print "test7\n";
     } else {
+    	print "test8\n";
     	$object = $self->_fbaserv()->fasta_to_TranscriptSet({
     		uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id},
     		fasta => $params->{fasta},
@@ -1456,6 +1464,7 @@ sub create_plantseed_job
     		source => "PlantSEED",
     		type => "Plant"
     	});
+    	print "test9\n";
     	$object = $self->_fbaserv()->TranscriptSet_to_Genome({
     		TranscriptSet_uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id},
     		TranscriptSet_ws => "Private_PlantSEED",
@@ -1466,13 +1475,16 @@ sub create_plantseed_job
     		domain => "Plant",
     		genetic_code => 11
     	});
+    	print "test10\n";
     }
+    print "test11\n";
     $object = $self->_fbaserv()->annotate_workspace_Genome({
     	Genome_ws => "Private_PlantSEED",
     	workspace => "Private_PlantSEED",
     	Genome_uid => $genomeid.".".$self->_userobj()->{_id},
     	auth => $auth,
     });
+    print "test12\n";
     return {
     	genomeid => $genomeid
     };
