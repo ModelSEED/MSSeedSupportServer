@@ -1428,10 +1428,17 @@ sub create_plantseed_job
 	}
     print "test3\n";
     my $genomeid = "7777777".$r->result();
-    my $object;
+	my $jobdata = {
+		Genome_ws => $params->{Genome_ws},
+		Genome_uid => $params->{Genome_uid},
+		Genome_inst => $genome->{_kbaseWSMeta}->{wsinst},
+		new_uid => $params->{new_uid},
+		workspace => "Private_PlantSEED",
+		fbaurl => 'http://140.221.85.73:4043'
+	};
     if ($params->{proteins}) {
     	print "test5\n";
-    	$object = $self->_fbaserv()->fasta_to_ProteinSet({
+    	my $object = $self->_fbaserv()->fasta_to_ProteinSet({
     		uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{_id},
     		fasta => $params->{fasta},
     		workspace => "Private_PlantSEED",
@@ -1441,21 +1448,11 @@ sub create_plantseed_job
     		source => "PlantSEED",
     		type => "Plant"
     	});
-    	print "test6\n";
-    	$object = $self->_fbaserv()->ProteinSet_to_Genome({
-    		ProteinSet_uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{_id},
-    		ProteinSet_ws => "Private_PlantSEED",
-    		workspace => "Private_PlantSEED",
-    		uid => $genomeid.".".$self->_userobj()->{_id},
-    		auth => $auth,
-    		scientific_name => $params->{name},
-    		domain => "Plant",
-    		genetic_code => 11
-    	});
-    	print "test7\n";
+    	$jobdata->{ProteinSet_uid} = "ProteinSet.".$genomeid.".".$self->_userobj()->{_id};
+    	$jobdata->{ProteinSet_ws} = "Private_PlantSEED";
     } else {
     	print "test8\n";
-    	$object = $self->_fbaserv()->fasta_to_TranscriptSet({
+    	my $object = $self->_fbaserv()->fasta_to_TranscriptSet({
     		uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id},
     		fasta => $params->{fasta},
     		workspace => "Private_PlantSEED",
@@ -1465,30 +1462,18 @@ sub create_plantseed_job
     		source => "PlantSEED",
     		type => "Plant"
     	});
-    	print "test9\n";
-    	$object = $self->_fbaserv()->TranscriptSet_to_Genome({
-    		TranscriptSet_uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id},
-    		TranscriptSet_ws => "Private_PlantSEED",
-    		workspace => "Private_PlantSEED",
-    		uid => $genomeid.".".$self->_userobj()->{_id},
-    		auth => $auth,
-    		scientific_name => $params->{name},
-    		domain => "Plant",
-    		genetic_code => 11
-    	});
-    	print "test10\n";
+    	$jobdata->{TranscriptSet_uid} = "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id};
+    	$jobdata->{TranscriptSet_ws} = "Private_PlantSEED";
     }
-    print "test11\n";
-    $object = $self->_fbaserv()->annotate_workspace_Genome({
-    	Genome_ws => "Private_PlantSEED",
-    	workspace => "Private_PlantSEED",
-    	Genome_uid => $genomeid.".".$self->_userobj()->{_id},
-    	auth => $auth,
-    });
-    print "test12\n";
-    return {
-    	genomeid => $genomeid
-    };
+    print "test9\n";
+    my $job = $self->_wsserv()->queue_job({
+		auth => $auth,
+		type => "PlantSEED",
+		jobdata => $jobdata,
+		queuecommand => "create_plantseed_job",
+		"state" => "queued"
+	});
+    return $genomeid.".".$self->_userobj()->{_id};
     #END create_plantseed_job
     my @_bad_returns;
     (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
