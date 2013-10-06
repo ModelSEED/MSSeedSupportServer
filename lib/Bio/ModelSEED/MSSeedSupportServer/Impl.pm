@@ -1414,7 +1414,11 @@ sub create_plantseed_job
     my $genomeid = "7777777.".$r->result();
 	my $jobdata = {
 		workspace => "Private_PlantSEED",
-		fbaurl => 'http://140.221.85.73:4043'
+		fbaurl => 'http://140.221.85.73:4043',
+		genome_id => $genomeid,
+		user_id => $self->_userobj()->{id},
+		owner => $self->_userobj()->{username},
+		name => $params->{name}
 	};
     if ($params->{proteins}) {
     	my $object = $self->_fbaserv()->fasta_to_ProteinSet({
