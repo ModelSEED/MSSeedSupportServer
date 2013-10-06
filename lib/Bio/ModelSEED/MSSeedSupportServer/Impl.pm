@@ -1429,10 +1429,6 @@ sub create_plantseed_job
     print "test3\n";
     my $genomeid = "7777777".$r->result();
 	my $jobdata = {
-		Genome_ws => $params->{Genome_ws},
-		Genome_uid => $params->{Genome_uid},
-		Genome_inst => $genome->{_kbaseWSMeta}->{wsinst},
-		new_uid => $params->{new_uid},
 		workspace => "Private_PlantSEED",
 		fbaurl => 'http://140.221.85.73:4043'
 	};
@@ -1450,6 +1446,7 @@ sub create_plantseed_job
     	});
     	$jobdata->{ProteinSet_uid} = "ProteinSet.".$genomeid.".".$self->_userobj()->{_id};
     	$jobdata->{ProteinSet_ws} = "Private_PlantSEED";
+    	$jobdata->{ProteinSet_inst} = $object->[3];
     } else {
     	print "test8\n";
     	my $object = $self->_fbaserv()->fasta_to_TranscriptSet({
@@ -1464,6 +1461,7 @@ sub create_plantseed_job
     	});
     	$jobdata->{TranscriptSet_uid} = "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id};
     	$jobdata->{TranscriptSet_ws} = "Private_PlantSEED";
+    	$jobdata->{TranscriptSet_inst} = $object->[3];
     }
     print "test9\n";
     my $job = $self->_wsserv()->queue_job({
@@ -1473,7 +1471,7 @@ sub create_plantseed_job
 		queuecommand => "create_plantseed_job",
 		"state" => "queued"
 	});
-    return $genomeid.".".$self->_userobj()->{_id};
+    $output = $genomeid.".".$self->_userobj()->{_id};
     #END create_plantseed_job
     my @_bad_returns;
     (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
