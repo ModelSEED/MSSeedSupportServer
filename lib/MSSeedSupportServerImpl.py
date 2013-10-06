@@ -84,8 +84,8 @@ class MSSeedSupportServer:
         #END create_plantseed_job
 
         #At some point might do deeper type checking...
-        if not isinstance(output, dict):
-            raise ValueError('Method create_plantseed_job return value output is not type dict as required.')
+        if not isinstance(output, basestring):
+            raise ValueError('Method create_plantseed_job return value output is not type basestring as required.')
         # return the results
         return [ output ]
         

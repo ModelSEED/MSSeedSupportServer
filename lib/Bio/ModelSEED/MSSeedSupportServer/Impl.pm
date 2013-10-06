@@ -1338,7 +1338,7 @@ sub load_model_to_modelseed
 
 <pre>
 $params is a create_plantseed_job_params
-$output is a plantseed_job_data
+$output is a string
 create_plantseed_job_params is a reference to a hash where the following keys are defined:
 	username has a value which is a string
 	password has a value which is a string
@@ -1348,12 +1348,6 @@ create_plantseed_job_params is a reference to a hash where the following keys ar
 	genetic_code has a value which is a string
 	domain has a value which is a string
 	scientific_name has a value which is a string
-plantseed_job_data is a reference to a hash where the following keys are defined:
-	owner has a value which is a string
-	genome has a value which is a string
-	contigs has a value which is a string
-	model has a value which is a string
-	status has a value which is a string
 
 </pre>
 
@@ -1362,7 +1356,7 @@ plantseed_job_data is a reference to a hash where the following keys are defined
 =begin text
 
 $params is a create_plantseed_job_params
-$output is a plantseed_job_data
+$output is a string
 create_plantseed_job_params is a reference to a hash where the following keys are defined:
 	username has a value which is a string
 	password has a value which is a string
@@ -1372,12 +1366,6 @@ create_plantseed_job_params is a reference to a hash where the following keys ar
 	genetic_code has a value which is a string
 	domain has a value which is a string
 	scientific_name has a value which is a string
-plantseed_job_data is a reference to a hash where the following keys are defined:
-	owner has a value which is a string
-	genome has a value which is a string
-	contigs has a value which is a string
-	model has a value which is a string
-	status has a value which is a string
 
 
 =end text
@@ -1427,7 +1415,7 @@ sub create_plantseed_job
 	    $self->_error("Failed to register 7777777 with ACH: ".$r->faultcode .":".$r->faultstring);
 	}
     print "test3\n";
-    my $genomeid = "7777777".$r->result();
+    my $genomeid = "7777777.".$r->result();
 	my $jobdata = {
 		workspace => "Private_PlantSEED",
 		fbaurl => 'http://140.221.85.73:4043'
@@ -1474,7 +1462,7 @@ sub create_plantseed_job
     $output = $genomeid.".".$self->_userobj()->{_id};
     #END create_plantseed_job
     my @_bad_returns;
-    (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
+    (!ref($output)) or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
     if (@_bad_returns) {
 	my $msg = "Invalid returns passed to create_plantseed_job:\n" . join("", map { "\t$_\n" } @_bad_returns);
 	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
@@ -2157,53 +2145,6 @@ scientific_name has a value which is a string
 
 
 
-=head2 plantseed_job_data
-
-=over 4
-
-
-
-=item Description
-
-Output for the "create_plantseed_job" function.
-
-        string owner - owner of the plantseed genome
-        string genomeid - ID of the plantseed genome
-        string contigid - ID of the contigs for plantseed genome
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-owner has a value which is a string
-genome has a value which is a string
-contigs has a value which is a string
-model has a value which is a string
-status has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-owner has a value which is a string
-genome has a value which is a string
-contigs has a value which is a string
-model has a value which is a string
-status has a value which is a string
-
-
-=end text
-
-=back
-
-
-
 =head2 get_plantseed_genomes_params
 
 =over 4
@@ -2343,8 +2284,7 @@ kbpassword has a value which is a string
 
 Input for "kblogin" function.
 
-        string kblogin - KBase username
-        string kbpassword - KBase password
+        string authtoken - KBase token
 
 
 =item Definition

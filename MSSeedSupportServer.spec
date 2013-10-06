@@ -136,24 +136,10 @@ module MSSeedSupportServer {
 		string domain;
 		string scientific_name;
     } create_plantseed_job_params;
-    /* Output for the "create_plantseed_job" function.
-	
-		string owner - owner of the plantseed genome
-		string genomeid - ID of the plantseed genome
-		string contigid - ID of the contigs for plantseed genome
-		
-	*/
-	typedef structure {
-		string owner;
-		string genome;
-		string contigs;
-		string model;
-		string status;
-    } plantseed_job_data;
     /*
         Creates a plant seed job for the input fasta file
     */
-    funcdef create_plantseed_job(create_plantseed_job_params params) returns (plantseed_job_data output);
+    funcdef create_plantseed_job(create_plantseed_job_params params) returns (string output);
 	
 	/* Input parameters for the "get_plantseed_genomes" function.
 	
