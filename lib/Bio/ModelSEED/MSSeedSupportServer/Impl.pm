@@ -1402,28 +1402,23 @@ sub create_plantseed_job
     if (!defined($self->_userobj())) {
     	$self->_error("Must be logged in to create PlantSEED job!","create_plantseed_job");
     }
-    print "test1\n";
     #Getting KBase auth token for PlantSEED workspace
     my $auth = join("\n",@{$self->_load_single_column_file("/vol/model-prod/plantseed-auth")});
     #Getting new genome ID for PlantSEED genome
-    print "test2\n";
     my $service_url = "http://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";
 	my $proxy = SOAP::Lite->uri('http://www.soaplite.com/Scripts')->proxy($service_url);
 	my $r = $proxy->register_genome("7777777");
-	print "test4\n";
 	if ($r->fault) {
 	    $self->_error("Failed to register 7777777 with ACH: ".$r->faultcode .":".$r->faultstring);
 	}
-    print "test3\n";
     my $genomeid = "7777777.".$r->result();
 	my $jobdata = {
 		workspace => "Private_PlantSEED",
 		fbaurl => 'http://140.221.85.73:4043'
 	};
     if ($params->{proteins}) {
-    	print "test5\n";
     	my $object = $self->_fbaserv()->fasta_to_ProteinSet({
-    		uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{_id},
+    		uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{id},
     		fasta => $params->{fasta},
     		workspace => "Private_PlantSEED",
     		auth => $auth,
@@ -1432,13 +1427,12 @@ sub create_plantseed_job
     		source => "PlantSEED",
     		type => "Plant"
     	});
-    	$jobdata->{ProteinSet_uid} = "ProteinSet.".$genomeid.".".$self->_userobj()->{_id};
+    	$jobdata->{ProteinSet_uid} = "ProteinSet.".$genomeid.".".$self->_userobj()->{id};
     	$jobdata->{ProteinSet_ws} = "Private_PlantSEED";
     	$jobdata->{ProteinSet_inst} = $object->[3];
     } else {
-    	print "test8\n";
     	my $object = $self->_fbaserv()->fasta_to_TranscriptSet({
-    		uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id},
+    		uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{id},
     		fasta => $params->{fasta},
     		workspace => "Private_PlantSEED",
     		auth => $auth,
@@ -1447,11 +1441,10 @@ sub create_plantseed_job
     		source => "PlantSEED",
     		type => "Plant"
     	});
-    	$jobdata->{TranscriptSet_uid} = "TranscriptSet.".$genomeid.".".$self->_userobj()->{_id};
+    	$jobdata->{TranscriptSet_uid} = "TranscriptSet.".$genomeid.".".$self->_userobj()->{id};
     	$jobdata->{TranscriptSet_ws} = "Private_PlantSEED";
     	$jobdata->{TranscriptSet_inst} = $object->[3];
     }
-    print "test9\n";
     my $job = $self->_wsserv()->queue_job({
 		auth => $auth,
 		type => "PlantSEED",
@@ -1459,7 +1452,7 @@ sub create_plantseed_job
 		queuecommand => "create_plantseed_job",
 		"state" => "queued"
 	});
-    $output = $genomeid.".".$self->_userobj()->{_id};
+    $output = $genomeid.".".$self->_userobj()->{id};
     #END create_plantseed_job
     my @_bad_returns;
     (!ref($output)) or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
@@ -1568,7 +1561,7 @@ sub get_plantseed_genomes
     for (my $i=0; $i < @{$objs}; $i++) {
     	if ($objs->[$i]->[0] =~ m/(\d+\.\d+)\.(\d+)/) {
     		my $genome = $1;
-    		if ($2 eq $self->_userobj()->{_id}) {
+    		if ($2 eq $self->_userobj()->{id}) {
     			my ($comps,$rxns,$mdlftrs,$cpds,$biocpds) = ("","","","","");
     			my $status = "building";
     			if (defined($models->{"PlantSEED".$objs->[$i]->[0]})) {
