@@ -51,10 +51,19 @@ sub _clearContext {
 	my ($self) = @_;
 }
 
+=head3 _error
+
+Definition:
+	$self->_error(string message,string method);
+Description:
+	Throws an exception
+		
+=cut
+
 sub _error {
-	my ($self,$msg,$method) = @_;
-    Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-    method_name => $method);
+	my($self,$msg,$method) = @_;
+	$msg = "ERROR{".$msg."}ERROR";
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,method_name => $method);
 }
 
 sub _getUserObj {
@@ -71,8 +80,8 @@ sub _getUserObj {
     };
     my $users = $db->selectall_arrayref($select, { Slice => $columns }, $username);
 	if (!defined($users) || scalar @$users == 0) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Username not found!",
-        method_name => '_getUserObj');
+        $self->_error("Username not found!",
+        '_getUserObj');
     }
     $db->disconnect;
     return $users->[0];
@@ -82,8 +91,8 @@ sub _authenticate_user {
 	my ($self,$username,$password) = @_;
 	my $userobj = $self->_getUserObj($username);
 	if ($password ne $userobj->{password} && crypt($password, $userobj->{password}) ne $userobj->{password}) {
-		Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Authentication failed!",
-        method_name => '_authenticate_user');
+		$self->_error("Authentication failed!",
+        '_authenticate_user');
 	}
 	return {
 		username => $userobj->{login},
@@ -565,8 +574,8 @@ sub _webapp_db_connect {
     my $user = "webappuser";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
-        method_name => '_authenticate_user');
+        $self->_error("Could not connect to database!",
+        '_authenticate_user');
     }
     return $db;
 }
@@ -577,8 +586,8 @@ sub _rast_db_connect {
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
-        method_name => '_authenticate_user');
+        $self->_error("Could not connect to database!",
+        '_authenticate_user');
     }
     return $db;
 }
@@ -589,8 +598,8 @@ sub _testrast_db_connect {
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
-        method_name => '_authenticate_user');
+        $self->_error("Could not connect to database!",
+        '_authenticate_user');
     }
     return $db;
 }
@@ -671,8 +680,8 @@ sub _has_right {
     my ($self,$genome) = @_;
     my $db = $self->_webapp_db_connect();
 	if (!defined($db)) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Could not connect to database!",
-        method_name => '_authenticate_user');
+        $self->_error("Could not connect to database!",
+        '_authenticate_user');
     }
     my $select = "SELECT * FROM UserHasScope WHERE UserHasScope.user = ?";
     my $columns = {
@@ -732,8 +741,8 @@ sub _validateargs {
 	    $args = {};
 	}
 	if (ref($args) ne "HASH") {
-		Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Arguments not hash",
-		method_name => '_validateargs');
+		$self->_error("Arguments not hash",
+		'_validateargs');
 	}
 	if (defined($substitutions) && ref($substitutions) eq "HASH") {
 		foreach my $original (keys(%{$substitutions})) {
@@ -748,8 +757,8 @@ sub _validateargs {
 		}
 	}
 	if (defined($args->{_error})) {
-		Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Mandatory arguments ".join("; ",@{$args->{_error}})." missing.",
-		method_name => '_validateargs');
+		$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.",
+		'_validateargs');
 	}
 	if (defined($optionalArguments)) {
 		foreach my $argument (keys(%{$optionalArguments})) {
@@ -886,8 +895,8 @@ sub getRastGenomeData
 	require FIGV;
 	my $figv = new FIGV($output->{directory});
 	if (!defined($figv)) {
-        Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Failed to load FIGV",
-        method_name => 'getRastGenomeData');
+        $self->_error("Failed to load FIGV",
+        'getRastGenomeData');
 	}
 	if ($params->{getDNASequence} == 1) {
 		my @contigs = $figv->all_contigs($params->{genome});
@@ -1030,8 +1039,8 @@ sub get_user_info
     $self->_setContext($params);
     $params = $self->_validateargs($params,[],{});
     if (!defined($self->_userobj())) {
-    	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Must provide valid username and password!",
-        method_name => 'get_user_info');
+    	$self->_error("Must provide valid username and password!",
+        'get_user_info');
     }
 	$output = $self->_userobj();
     #END get_user_info
@@ -1107,8 +1116,8 @@ sub authenticate
     $self->_setContext($params);
     $params = $self->_validateargs($params,[],{});
     if (!defined($self->_userobj())) {
-    	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "Must provide valid username and password!",
-        method_name => 'get_user_info');
+    	$self->_error("Must provide valid username and password!",
+        'get_user_info');
     }
     return $self->_userobj()->{username}."\t".$self->_userobj()->{password};
     #END authenticate
@@ -1338,7 +1347,7 @@ sub load_model_to_modelseed
 
 <pre>
 $params is a create_plantseed_job_params
-$output is a string
+$output is a JobObject
 create_plantseed_job_params is a reference to a hash where the following keys are defined:
 	username has a value which is a string
 	password has a value which is a string
@@ -1348,6 +1357,17 @@ create_plantseed_job_params is a reference to a hash where the following keys ar
 	genetic_code has a value which is a string
 	domain has a value which is a string
 	scientific_name has a value which is a string
+JobObject is a reference to a hash where the following keys are defined:
+	id has a value which is a string
+	type has a value which is a string
+	auth has a value which is a string
+	status has a value which is a string
+	jobdata has a value which is a reference to a hash where the key is a string and the value is a string
+	queuetime has a value which is a string
+	starttime has a value which is a string
+	completetime has a value which is a string
+	owner has a value which is a string
+	queuecommand has a value which is a string
 
 </pre>
 
@@ -1356,7 +1376,7 @@ create_plantseed_job_params is a reference to a hash where the following keys ar
 =begin text
 
 $params is a create_plantseed_job_params
-$output is a string
+$output is a JobObject
 create_plantseed_job_params is a reference to a hash where the following keys are defined:
 	username has a value which is a string
 	password has a value which is a string
@@ -1366,6 +1386,17 @@ create_plantseed_job_params is a reference to a hash where the following keys ar
 	genetic_code has a value which is a string
 	domain has a value which is a string
 	scientific_name has a value which is a string
+JobObject is a reference to a hash where the following keys are defined:
+	id has a value which is a string
+	type has a value which is a string
+	auth has a value which is a string
+	status has a value which is a string
+	jobdata has a value which is a reference to a hash where the key is a string and the value is a string
+	queuetime has a value which is a string
+	starttime has a value which is a string
+	completetime has a value which is a string
+	owner has a value which is a string
+	queuecommand has a value which is a string
 
 
 =end text
@@ -1456,10 +1487,11 @@ sub create_plantseed_job
 		queuecommand => "create_plantseed_job",
 		"state" => "queued"
 	});
-    $output = $genomeid.".".$self->_userobj()->{id};
+	$job->{genomeid} = $genomeid.".".$self->_userobj()->{id};
+    $output = $job;
     #END create_plantseed_job
     my @_bad_returns;
-    (!ref($output)) or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
+    (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
     if (@_bad_returns) {
 	my $msg = "Invalid returns passed to create_plantseed_job:\n" . join("", map { "\t$_\n" } @_bad_returns);
 	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
@@ -1671,8 +1703,8 @@ sub kblogin
     require "Bio/KBase/AuthToken.pm";
     my $token = Bio::KBase::AuthToken->new(user_id => $params->{kblogin}, password => $params->{kbpassword});
 	if (!defined($token->token())) {
-    	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "KBase login failed!",
-        method_name => 'kblogin');
+    	$self->_error("KBase login failed!",
+        'kblogin');
     }
     print "Three:".$params->{kblogin}."\t".$params->{kbpassword}."\n";
 	$authtoken = $token->token();
@@ -1750,8 +1782,8 @@ sub kblogin_from_token
     $params = $self->_validateargs($params,["authtoken"],{});
 	my $token = Bio::KBase::AuthToken->new(token => $params->{authtoken});
 	if (!defined($token->user_id())) {
-    	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => "KBase auth token check failed!",
-        method_name => 'kblogin_from_token');
+    	$self->_error("KBase auth token check failed!",
+        'kblogin_from_token');
     }
 	$login = $token->user_id();
     #END kblogin_from_token
@@ -2081,6 +2113,54 @@ owner has a value which is a string
 genome has a value which is a string
 reactions has a value which is a reference to a list where each element is a string
 biomass has a value which is a string
+
+
+=end text
+
+=back
+
+
+
+=head2 JobObject
+
+=over 4
+
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+id has a value which is a string
+type has a value which is a string
+auth has a value which is a string
+status has a value which is a string
+jobdata has a value which is a reference to a hash where the key is a string and the value is a string
+queuetime has a value which is a string
+starttime has a value which is a string
+completetime has a value which is a string
+owner has a value which is a string
+queuecommand has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+id has a value which is a string
+type has a value which is a string
+auth has a value which is a string
+status has a value which is a string
+jobdata has a value which is a reference to a hash where the key is a string and the value is a string
+queuetime has a value which is a string
+starttime has a value which is a string
+completetime has a value which is a string
+owner has a value which is a string
+queuecommand has a value which is a string
 
 
 =end text

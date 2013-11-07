@@ -119,6 +119,19 @@ module MSSeedSupportServer {
     */
     funcdef load_model_to_modelseed(load_model_to_modelseed_params params) returns (int success);
 
+	typedef structure {
+		string id;
+		string type;
+		string auth;
+		string status;
+		mapping<string,string> jobdata;
+		string queuetime;
+		string starttime;
+		string completetime;
+		string owner;
+		string queuecommand;
+    } JobObject;
+
 	/* Input parameters for the "create_plantseed_job" function.
 	
 		string username - username of owner of new genome
@@ -139,7 +152,7 @@ module MSSeedSupportServer {
     /*
         Creates a plant seed job for the input fasta file
     */
-    funcdef create_plantseed_job(create_plantseed_job_params params) returns (string output);
+    funcdef create_plantseed_job(create_plantseed_job_params params) returns (JobObject output);
 	
 	/* Input parameters for the "get_plantseed_genomes" function.
 	
