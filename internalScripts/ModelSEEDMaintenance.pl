@@ -91,6 +91,28 @@ sub work {
 		my $obj = $objs->[$i];
 		$kbmdlhash->{$obj->[0]} = $obj;
 	}
+	#Printing SBML
+	for (my $i=0; $i < @{$models}; $i++) {
+		if (defined($kbmdlhash->{$models->[$i]->{id}})) {
+			my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$models->[$i]->{owner}."/".$models->[$i]->{id}."/0/";
+			my $sbmlfile = $directory."model.sbml";
+			if (!-e $sbmlfile) {
+				eval {
+					my $sbml = $self->fbaserv()->export_fbamodel({
+						auth => $self->params("auth"),
+						model => $models->[$i]->{id},
+						format => "modelseed",
+						workspace => "ModelSEEDModels"
+					});
+					if (defined($sbml)) {
+						open(SBML, "> ".$sbmlfile);
+						print SBML $sbml;
+						close(SBML);
+					}
+				};
+			}
+		}
+	}
 	open(STATUS, "> /homes/chenry/public_html/ModelStatus.html") || die "could not open model status file!";
 	print STATUS '<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">'."\n";
 	print STATUS '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>ModelSEED Status</title>'."\n";
