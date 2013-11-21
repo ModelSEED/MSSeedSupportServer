@@ -122,7 +122,7 @@ sub work {
 						print SBML $sbml;
 						close(SBML);
 					}
-				} print STDERR $@ if $@;
+				}; print STDERR $@ if $@;
 			}
 		}
 	}
