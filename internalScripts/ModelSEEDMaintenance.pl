@@ -96,12 +96,25 @@ sub work {
 		if (defined($kbmdlhash->{$models->[$i]->{id}})) {
 			my $directory = "/vol/model-dev/MODEL_DEV_DB/Models2/".$models->[$i]->{owner}."/".$models->[$i]->{id}."/0/";
 			my $sbmlfile = $directory."model.sbml";
+			my $print = 0;
 			if (!-e $sbmlfile) {
+				$print = 1;
+			} else {
+				open(SBML, "< ".$sbmlfile);
+				my $line = <SBML>;
+				chomp($line);
+				if ($line eq "REACTIONS") {
+					$print = 1;
+				}
+				close(SBML);
+			}
+			if ($print == 1) {
 				eval {
+					print "Printing ".$sbmlfile."\n";
 					my $sbml = $self->fbaserv()->export_fbamodel({
 						auth => $self->params("auth"),
 						model => $models->[$i]->{id},
-						format => "modelseed",
+						format => "sbml",
 						workspace => "ModelSEEDModels"
 					});
 					if (defined($sbml)) {
@@ -109,7 +122,7 @@ sub work {
 						print SBML $sbml;
 						close(SBML);
 					}
-				};
+				} print STDERR $@ if $@;
 			}
 		}
 	}
