@@ -83,7 +83,7 @@ sub work {
 	my $models = $self->retreiveModels();
 	my $objs = $self->wsserv()->list_workspace_objects({
 		workspace => "ModelSEEDModels",
-		type => "Model",
+		type => "KBaseFBA.FBAModel",
 		auth => $self->params("auth")
 	});
 	my $mdlhash = {};
