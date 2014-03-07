@@ -159,7 +159,6 @@ sub work {
 			} else {
 				print "Model build failed ".$model->{id}."!\n";
 			}
-			exit();
 		}
 	}
 	#Loading gapfilled models
