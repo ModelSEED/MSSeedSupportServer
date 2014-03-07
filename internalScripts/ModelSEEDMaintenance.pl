@@ -6,6 +6,7 @@ use JSON::XS;
 use File::Temp qw(tempfile);
 use LWP::Simple;
 use DateTime;
+use Bio::KBase::AuthToken;
 use Bio::KBase::workspace::Client;
 use Bio::KBase::fbaModelServices::Client;
 use Bio::ModelSEED::MSSeedSupportServer::Client;
@@ -419,7 +420,8 @@ sub readconfig {
 	#Reading in the config file
 	my $servicename = "msmaint";
 	my $params = {
-		auth => undef,
+		kbuser => undef,
+		kbpassword => undef,
 		looptime => undef,
 		dbuser => undef,
 		"fba-url" => undef,
@@ -429,24 +431,26 @@ sub readconfig {
 		rastpassword => undef,
 		PubSEEDGenomes => undef
 	};
-	if (!-e $self->directory()."/config.ini") {
+	if (!-e $self->directory()."/configs/MSMaintConfig.ini") {
 		print "No config file found!";
 		exit(0);
 	}
 	my $c = Config::Simple->new();
-	$c->read($self->directory()."/config.ini");
+	$c->read($self->directory()."/configs/MSMaintConfig.ini");
 	#Retrieving parameters
 	foreach my $param (keys(%{$params})) {
 		$self->{"_".$param} = $c->param($servicename.".".$param);
 	}
+	my $token = Bio::KBase::AuthToken->new(user_id => $self->{"_kbuser"}, password => $self->{"_kbpassword"});
+	$self->{"_auth"} = $token->token();
 }
 
 sub printPID {
 	my($self) = @_;
-	if (-e $self->directory()."/PID") {
-		unlink($self->directory()."/PID");
+	if (-e $self->directory()."/pids/mss-maint-pid") {
+		unlink($self->directory()."/pids/mss-maint-pid");
 	}
-	open(PID, "> ".$self->directory()."/PID") || die "could not open PID file!"; 
+	open(PID, "> ".$self->directory()."/pids/mss-maint-pid") || die "could not open PID file!"; 
 	print PID "$$\n"; 
 	close(PID);
 }
