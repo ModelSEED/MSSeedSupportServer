@@ -50,7 +50,7 @@ sub fbaserv {
 	if (!defined($self->{_fbaserv})) {
 		$self->{_fbaserv} = Bio::KBase::fbaModelServices::Client->new($self->params("fba-url"));
 		$self->{_fbaserv}->{token} = $self->params("auth");
-		$self->{_fbaserv}->{token} = $self->params("auth");
+		$self->{_fbaserv}->{client}->{token} = $self->params("auth");
 	}
 	return $self->{_fbaserv};
 }
@@ -60,7 +60,7 @@ sub wsserv {
 	if (!defined($self->{_wsserv})) {
 		$self->{_wsserv} = Bio::KBase::workspace::Client->new($self->params("ws-url"));
 		$self->{_wsserv}->{token} = $self->params("auth");
-		$self->{_wsserv}->{token} = $self->params("auth");
+		$self->{_wsserv}->{client}->{token} = $self->params("auth");
 	}
 	return $self->{_wsserv};
 }
@@ -159,6 +159,7 @@ sub work {
 			} else {
 				print "Model build failed ".$model->{id}."!\n";
 			}
+			exit();
 		}
 	}
 	#Loading gapfilled models
