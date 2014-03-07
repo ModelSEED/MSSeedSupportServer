@@ -6,7 +6,7 @@ use JSON::XS;
 use File::Temp qw(tempfile);
 use LWP::Simple;
 use DateTime;
-use Bio::KBase::workspaceService::Client;
+use Bio::KBase::workspace::Client;
 use Bio::KBase::fbaModelServices::Client;
 use Bio::ModelSEED::MSSeedSupportServer::Client;
 $|=1;
@@ -55,7 +55,7 @@ sub fbaserv {
 sub wsserv {
 	my($self) = @_;
 	if (!defined($self->{_wsserv})) {
-		$self->{_wsserv} = Bio::KBase::workspaceService::Client->new($self->params("ws-url"));	
+		$self->{_wsserv} = Bio::KBase::workspace::Client->new($self->params("ws-url"));	
 	}
 	return $self->{_wsserv};
 }
@@ -99,14 +99,6 @@ sub work {
 			my $print = 0;
 			if (!-e $sbmlfile) {
 				$print = 1;
-			} else {
-				open(SBML, "< ".$sbmlfile);
-				my $line = <SBML>;
-				chomp($line);
-				if ($line eq "REACTIONS") {
-					$print = 1;
-				}
-				close(SBML);
 			}
 			if ($print == 1) {
 				eval {
