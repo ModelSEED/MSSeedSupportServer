@@ -145,7 +145,7 @@ sub work {
 	print @{$models}." models!\n";
 	for (my $i=0; $i < @{$models};$i++) {
 		my $model = $models->[$i];
-		if ($model->{id} =~ m/^Seed[\d\.]+$/ && $model->{genome} =~ m/^\d+\.\d+$/) {
+		if ($model->{id} =~ m/^Seed[\d\.]+$/ && $model->{genome} =~ m/^\d+\.\d+$/ && $self->BlackListedModel($model->{id}) == 0) {
 			print "Loading genome for ".$model->{id}."!\n";
 			$self->loadGenomeForModel($model);
 			print "Building model for ".$model->{id}."!\n";
@@ -212,6 +212,21 @@ sub PubSEEDGenome {
 		}
 	}
 	if (defined($self->{_pubseedgenomes}->{$genome})) {
+		return 1;
+	}
+	return 0;
+}
+
+sub BlackListedModel {
+	my($self,$model) = @_;
+	if (!defined($self->{_blacklistedmodel})) {
+		my $models = [split(/;/,$self->params("blacklistmodels"))];
+		$self->{_blacklistedmodel} = {};
+		for (my $i=0; $i < @{$models}; $i++) {
+			$self->{_blacklistedmodel}->{$models->[$i]} = 1;
+		}
+	}
+	if (defined($self->{_blacklistedmodel}->{$model})) {
 		return 1;
 	}
 	return 0;
