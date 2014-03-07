@@ -48,7 +48,9 @@ sub directory {
 sub fbaserv {
 	my($self) = @_;
 	if (!defined($self->{_fbaserv})) {
-		$self->{_fbaserv} = Bio::KBase::fbaModelServices::Client->new($self->params("fba-url"));	
+		$self->{_fbaserv} = Bio::KBase::fbaModelServices::Client->new($self->params("fba-url"));
+		$self->{_fbaserv}->{token} = $self->params("auth");
+		$self->{_fbaserv}->{token} = $self->params("auth");
 	}
 	return $self->{_fbaserv};
 }
@@ -56,7 +58,9 @@ sub fbaserv {
 sub wsserv {
 	my($self) = @_;
 	if (!defined($self->{_wsserv})) {
-		$self->{_wsserv} = Bio::KBase::workspace::Client->new($self->params("ws-url"));	
+		$self->{_wsserv} = Bio::KBase::workspace::Client->new($self->params("ws-url"));
+		$self->{_wsserv}->{token} = $self->params("auth");
+		$self->{_wsserv}->{token} = $self->params("auth");
 	}
 	return $self->{_wsserv};
 }
@@ -105,7 +109,6 @@ sub work {
 				eval {
 					print "Printing ".$sbmlfile."\n";
 					my $sbml = $self->fbaserv()->export_fbamodel({
-						auth => $self->params("auth"),
 						model => $models->[$i]->{id},
 						format => "sbml",
 						workspace => "ModelSEEDModels"
