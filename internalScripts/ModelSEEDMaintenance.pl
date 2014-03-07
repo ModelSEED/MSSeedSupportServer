@@ -448,7 +448,8 @@ sub readconfig {
 		"ms-url" => undef,
 		rastlogin => undef,
 		rastpassword => undef,
-		PubSEEDGenomes => undef
+		PubSEEDGenomes => undef,
+		blacklistmodels => undef
 	};
 	if (!-e $self->directory()."/configs/MSMaintConfig.ini") {
 		print "No config file found!";
