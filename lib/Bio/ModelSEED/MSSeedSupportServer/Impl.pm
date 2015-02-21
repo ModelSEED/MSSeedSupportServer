@@ -907,7 +907,7 @@ sub getRastGenomeData
 		}
 	}
 	$output->{activeSubsystems} = $figv->active_subsystems($params->{genome});
-	my $completetaxonomy = $self->_load_single_column_file($output->{directory}."/TAXONOMY","\t")->[0];
+	my $completetaxonomy = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome}."/TAXONOMY","\t")->[0];
 	$completetaxonomy =~ s/;\s/;/g;
 	my $taxArray = [split(/;/,$completetaxonomy)];
 	$output->{name} = pop(@{$taxArray});
