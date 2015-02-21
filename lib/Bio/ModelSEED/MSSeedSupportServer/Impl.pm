@@ -882,7 +882,7 @@ sub getRastGenomeData
 	if (!defined($job)) {
 		$self->_error("Could not find job for genome!",'getRastGenomeData');
 	}
-    $output = {
+    my $output = {
     	$output->{owner} = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/USER","\t")->[0];
     	source => "RAST:".$job->{id},
         directory => "/vol/rast-prod/jobs/".$job->{id}."/rp/".$genome,
