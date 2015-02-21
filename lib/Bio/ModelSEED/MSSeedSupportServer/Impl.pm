@@ -878,19 +878,20 @@ sub getRastGenomeData
 		getSequences => 0,
 		getDNASequence => 0
 	});
+	$job = $self->_get_rast_job($genome);
+	if (!defined($job)) {
+		$self->_error("Could not find job for genome!",'getRastGenomeData');
+	}
     $output = {
+    	$output->{owner} = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/USER","\t")->[0];
+    	source => "RAST:".$job->{id},
+        directory => "/vol/rast-prod/jobs/".$job->{id}."/rp/".$genome,
         features => [],
 		gc => 0.5,
 		genome => $params->{genome},
 		owner => $self->_user(),
         source => "unknown"
 	};
-    my $rastjob = $self->_get_rast_job_data($params->{genome});
-    if (!defined($rastjob)) {
-        $self->_error("Could not find genome data!",'getRastGenomeData');
-    }
-    $output->{source} = $rastjob->{source};
-    $output->{directory} = $rastjob->{directory};
 	#Loading genomes with FIGV
 	require FIGV;
 	my $figv = new FIGV($output->{directory});
