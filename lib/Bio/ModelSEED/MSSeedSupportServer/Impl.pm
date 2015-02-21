@@ -878,14 +878,14 @@ sub getRastGenomeData
 		getSequences => 0,
 		getDNASequence => 0
 	});
-	$job = $self->_get_rast_job($genome);
+	my $job = $self->_get_rast_job($params->{genome});
 	if (!defined($job)) {
 		$self->_error("Could not find job for genome!",'getRastGenomeData');
 	}
     my $output = {
     	$output->{owner} = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/USER","\t")->[0],
     	source => "RAST:".$job->{id},
-        directory => "/vol/rast-prod/jobs/".$job->{id}."/rp/".$genome,
+        directory => "/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome},
         features => [],
 		gc => 0.5,
 		genome => $params->{genome},
