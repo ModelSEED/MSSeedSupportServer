@@ -945,13 +945,12 @@ sub getRastGenomeData
             "SOURCE"       => [ $output->{source} ],
             "ROLES"        => $RoleArray
         };
+        delete $newRow->{ROLES};
 		if (defined($Sequence) && length($Sequence) > 0) {
 			$newRow->{SEQUENCE}->[0] = $Sequence;
 		}
         push(@{$output->{features}}, $newRow);
 	}
-	delete $output->{features};
-	print STDERR Data::Dumper->Dump([$output]);
     $self->_clearContext();
     #END getRastGenomeData
     my @_bad_returns;
