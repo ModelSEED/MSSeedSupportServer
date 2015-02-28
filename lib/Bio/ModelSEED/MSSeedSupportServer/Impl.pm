@@ -945,10 +945,10 @@ sub getRastGenomeData
             "SOURCE"       => [ $output->{source} ],
             "ROLES"        => $RoleArray
         };
-        delete $newRow->{ROLES};
 		if (defined($Sequence) && length($Sequence) > 0) {
 			$newRow->{SEQUENCE}->[0] = $Sequence;
 		}
+		delete $newRow->{SEQUENCE};
         push(@{$output->{features}}, $newRow);
 	}
     $self->_clearContext();
