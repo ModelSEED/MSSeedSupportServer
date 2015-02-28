@@ -934,7 +934,7 @@ sub getRastGenomeData
 		}
         my $newRow = {
             "ID"           => [ $Row->[0] ],
- #           "GENOME"       => [ $params->{genome} ],
+            "GENOME"       => [ $params->{genome} ],
  #           "ALIASES"      => $AliaseArray,
             "TYPE"         => [ $Row->[3] ],
             "LOCATION"     => [ $Row->[1] ],
@@ -942,7 +942,7 @@ sub getRastGenomeData
             "LENGTH"       => [ $Row->[5] - $Row->[4] ],
             "MIN LOCATION" => [ $Row->[4] ],
             "MAX LOCATION" => [ $Row->[5] ],
-#            "SOURCE"       => [ $output->{source} ],
+            "SOURCE"       => [ $output->{source} ],
             "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {
