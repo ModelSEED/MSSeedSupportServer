@@ -884,7 +884,7 @@ sub getRastGenomeData
 	}
     my $output = {
     	owner => $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/USER","\t")->[0],
-    	source => "RAST:".$job->{id},
+#    	source => "RAST:".$job->{id},
         directory => "/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome},
         features => [],
 		gc => 0.5,
