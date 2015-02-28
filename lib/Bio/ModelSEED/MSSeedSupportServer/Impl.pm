@@ -945,13 +945,10 @@ sub getRastGenomeData
             "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {
-			$newRow->{SEQUENCE}->[0] = $Sequence;
+#			$newRow->{SEQUENCE}->[0] = $Sequence;
 		}
         push(@{$output->{features}}, $newRow);
 	}
-	my $JSON = JSON::XS->new->utf8(1);
-	$output = $JSON->encode($output);
-	$output = $JSON->decode($output);
     $self->_clearContext();
     #END getRastGenomeData
     my @_bad_returns;
