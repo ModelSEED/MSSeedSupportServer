@@ -884,7 +884,7 @@ sub getRastGenomeData
 	}
     my $output = {
     	owner => $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/USER","\t")->[0],
-#    	source => "RAST:".$job->{id},
+    	source => "RAST:".$job->{id},
         directory => "/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome},
         features => [],
 		gc => 0.5,
@@ -942,7 +942,7 @@ sub getRastGenomeData
             "MIN LOCATION" => [ $Row->[4] ],
             "MAX LOCATION" => [ $Row->[5] ],
 #            "SOURCE"       => [ $output->{source} ],
-            "ROLES"        => $RoleArray
+#            "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {
 #			$newRow->{SEQUENCE}->[0] = $Sequence;
