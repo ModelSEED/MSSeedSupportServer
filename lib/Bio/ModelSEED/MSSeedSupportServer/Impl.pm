@@ -934,21 +934,20 @@ sub getRastGenomeData
 		}
         my $newRow = {
             "ID"           => [ $Row->[0] ],
-            "GENOME"       => [ $params->{genome} ],
-            "ALIASES"      => $AliaseArray,
+ #           "GENOME"       => [ $params->{genome} ],
+ #           "ALIASES"      => $AliaseArray,
             "TYPE"         => [ $Row->[3] ],
             "LOCATION"     => [ $Row->[1] ],
             "DIRECTION"    => [$Direction],
             "LENGTH"       => [ $Row->[5] - $Row->[4] ],
             "MIN LOCATION" => [ $Row->[4] ],
             "MAX LOCATION" => [ $Row->[5] ],
-            "SOURCE"       => [ $output->{source} ],
+#            "SOURCE"       => [ $output->{source} ],
             "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {
 			$newRow->{SEQUENCE}->[0] = $Sequence;
 		}
-		delete $newRow->{SEQUENCE};
         push(@{$output->{features}}, $newRow);
 	}
     $self->_clearContext();
