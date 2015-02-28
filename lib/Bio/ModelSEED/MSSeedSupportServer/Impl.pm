@@ -889,8 +889,7 @@ sub getRastGenomeData
         features => [],
 		gc => 0.5,
 		genome => $params->{genome},
-		owner => $self->_user(),
-        source => "unknown"
+		owner => $self->_user()
 	};
 	#Loading genomes with FIGV
 	require FIGV;
@@ -942,7 +941,7 @@ sub getRastGenomeData
             "LENGTH"       => [ $Row->[5] - $Row->[4] ],
             "MIN LOCATION" => [ $Row->[4] ],
             "MAX LOCATION" => [ $Row->[5] ],
-            "SOURCE"       => [ $output->{source} ],
+#            "SOURCE"       => [ $output->{source} ],
             "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {

@@ -103,6 +103,7 @@ if ($stage eq "gapfillmodel") {
 	$output = $fbaserv->gapfill_model({
 		model => "Seed".$genome,
 		workspace => "ModelSEEDModels",
+		fastgapfill => 1
 	});
 	$stage = "loadtomodelseed";
 }
