@@ -933,8 +933,8 @@ sub getRastGenomeData
 		}
         my $newRow = {
             "ID"           => [ $Row->[0] ],
-            "GENOME"       => [ $params->{genome} ],
- #           "ALIASES"      => $AliaseArray,
+#           "GENOME"       => [ $params->{genome} ],
+#           "ALIASES"      => $AliaseArray,
             "TYPE"         => [ $Row->[3] ],
             "LOCATION"     => [ $Row->[1] ],
             "DIRECTION"    => [$Direction],
