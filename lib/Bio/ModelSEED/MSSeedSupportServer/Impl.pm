@@ -933,22 +933,25 @@ sub getRastGenomeData
 		}
         my $newRow = {
             "ID"           => [ $Row->[0] ],
-#           "GENOME"       => [ $params->{genome} ],
-#           "ALIASES"      => $AliaseArray,
+           "GENOME"       => [ $params->{genome} ],
+           "ALIASES"      => $AliaseArray,
             "TYPE"         => [ $Row->[3] ],
             "LOCATION"     => [ $Row->[1] ],
             "DIRECTION"    => [$Direction],
             "LENGTH"       => [ $Row->[5] - $Row->[4] ],
             "MIN LOCATION" => [ $Row->[4] ],
             "MAX LOCATION" => [ $Row->[5] ],
-#            "SOURCE"       => [ $output->{source} ],
-#            "ROLES"        => $RoleArray
+            "SOURCE"       => [ $output->{source} ],
+            "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {
-#			$newRow->{SEQUENCE}->[0] = $Sequence;
+			$newRow->{SEQUENCE}->[0] = $Sequence;
 		}
         push(@{$output->{features}}, $newRow);
 	}
+	my $JSON = JSON::XS->new->utf8(1);
+	$output = $JSON->encode($output);
+	$output = $JSON->decode($output);
     $self->_clearContext();
     #END getRastGenomeData
     my @_bad_returns;
