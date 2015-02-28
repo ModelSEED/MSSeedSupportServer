@@ -37,7 +37,14 @@ my $token = Bio::KBase::AuthToken->new(user_id => $c->param("msmaint.kbuser"), p
 $token = $token->token();
 #Getting clients
 my $wserv = Bio::KBase::workspace::Client->new($c->param("msmaint.ws-url"),token => $token);
-my $fbaserv = Bio::KBase::fbaModelServices::Client->new($c->param("msmaint.fba-url"),token => $token);
+my $fbaserv;
+if ($c->param("msmaint.fba-url") eq "impl") {
+	$Bio::KBase::fbaModelServices::Server::CallContext = {token => $token};
+	require "Bio/KBase/fbaModelServices/Impl.pm";
+	$fbaserv = Bio::KBase::fbaModelServices::Impl->new({"workspace-url" => workspaceURL()});
+} else {
+	$fbaserv = Bio::KBase::fbaModelServices::Client->new($c->param("msmaint.fba-url"),token => $token);
+}
 my $mssserv = Bio::ModelSEED::MSSeedSupportServer::Client->new($c->param("msmaint.ms-url"));
 #Loading genome
 print "test0\n";
