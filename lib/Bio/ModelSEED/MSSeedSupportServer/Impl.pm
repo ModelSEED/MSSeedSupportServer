@@ -906,7 +906,7 @@ sub getRastGenomeData
 			push(@{$output->{DNAsequence}},$figv->get_dna($params->{genome},$contigs[$i],1,$contigLength));
 		}
 	}
-	$output->{activeSubsystems} = $figv->active_subsystems($params->{genome});
+	#$output->{activeSubsystems} = $figv->active_subsystems($params->{genome});
 	my $completetaxonomy = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome}."/TAXONOMY","\t")->[0];
 	$completetaxonomy =~ s/;\s/;/g;
 	my $taxArray = [split(/;/,$completetaxonomy)];
@@ -920,6 +920,9 @@ sub getRastGenomeData
 			push(@{$RoleArray},@{$self->_roles_of_function($Row->[6])});
 		} else {
 			$RoleArray = ["NONE"];
+		}
+		for (my $i=0; $i < @{$RoleArray}; $i++) {
+			$RoleArray->[$i] =~ s/[\W\s-,:\.\|\(\)\]\[]//g;
 		}
 		my $AliaseArray;
 		push(@{$AliaseArray},split(/,/,$Row->[2]));
