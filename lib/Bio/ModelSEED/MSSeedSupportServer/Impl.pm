@@ -921,9 +921,6 @@ sub getRastGenomeData
 		} else {
 			$RoleArray = ["NONE"];
 		}
-		for (my $i=0; $i < @{$RoleArray}; $i++) {
-			$RoleArray->[$i] =~ s/[\W\s-,:\.\|\(\)\]\[]//g;
-		}
 		my $AliaseArray;
 		push(@{$AliaseArray},split(/,/,$Row->[2]));
 		my $Sequence;
@@ -953,6 +950,7 @@ sub getRastGenomeData
 		}
         push(@{$output->{features}}, $newRow);
 	}
+	delete $output->{features};
 	print STDERR Data::Dumper->Dump([$output]);
     $self->_clearContext();
     #END getRastGenomeData
