@@ -7,7 +7,7 @@ use File::Path;
 use Data::Dumper;
 use Config::Simple;
 use Bio::KBase::workspace::ScriptHelpers qw(printObjectInfo get_ws_client workspace workspaceURL parseObjectMeta parseWorkspaceMeta printObjectMeta);
-use Bio::KBase::fbaModelServices::ScriptHelpers qw(getToken fbaws get_fba_client runFBACommand universalFBAScriptCode );
+use Bio::KBase::fbaModelServices::ScriptHelpers qw(save_workspace_object getToken fbaws get_fba_client runFBACommand universalFBAScriptCode );
 use Bio::ModelSEED::MSSeedSupportServer::Client;
 
 $|=1;
@@ -68,6 +68,7 @@ if ($stage eq "loadgenome") {
 		}
 	}
 	if ($loadgenome == 1) {
+		print "test3\n";
 		eval {
 			$output = $wserv->get_object_info([{
 				workspace => "PubSEEDGenomes",
@@ -75,6 +76,7 @@ if ($stage eq "loadgenome") {
 			}],1);
 		};
 		if (defined($output)) {
+			print "test4\n";
 			$output = $wserv->copy_object({
 				from => {
 					workspace => "PubSEEDGenomes",
@@ -86,6 +88,7 @@ if ($stage eq "loadgenome") {
 				}
 			});
 		} else {
+			print "test5\n";
 			my $db = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306", "rast");
 			if (!defined($db)) {
 				die("Could not connect to database!");
@@ -98,6 +101,7 @@ if ($stage eq "loadgenome") {
 			my $jobs = $db->selectall_arrayref("SELECT * FROM Job WHERE Job.genome_id = ?", { Slice => $columns }, $genome);
 			$db->disconnect;
 			my $jobid = $jobs->[0]->{id};
+			print "test6 ".$jobid."\n";
 			if (!defined($jobid)) {
 				die("Could not find job ID for ".$genome);
 			}
@@ -107,6 +111,7 @@ if ($stage eq "loadgenome") {
 		    if (!defined($figv)) {
 		        die("Could not load genome in FIGV for ".$genome);
 			}
+			print "test7\n";
 			my $completetaxonomy = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome}."/TAXONOMY","\t")->[0];
 			$completetaxonomy =~ s/;\s/;/g;
 			my $taxArray = [split(/;/,$completetaxonomy)];
@@ -119,7 +124,7 @@ if ($stage eq "loadgenome") {
 				source => "RAST:".$jobid,
 				type => "Organism",
 				contigs => []
-		    };    
+		    };
 		    my @contigs = $figv->all_contigs($genome);
 			my $genomeobj = {
 				id => $genome,
@@ -137,6 +142,7 @@ if ($stage eq "loadgenome") {
 				complete => 1,
 				publications => [],
 				features => [],
+				contigset_ref => "ModelSEEDGenomes/".$genome.".contigset"
 		    };
 			my $md5list = [];
 			my $gccount = 0;
@@ -201,7 +207,9 @@ if ($stage eq "loadgenome") {
 				push(@{$genomeobj->{features}},$feature);
 			}
 			$genomeobj->{md5} = Digest::MD5::md5_hex(join(";",sort { $a cmp $b } @{$md5list}));
-		}
+			print "test8\n";
+			save_workspace_object("ModelSEEDGenomes/".$genome.".contigset",$contigset,"KBaseGenomes.ContigSet");
+			save_workspace_object("ModelSEEDGenomes/".$genome,$genomeobj,"KBaseGenomes.Genome");
 	}
 	$stage = "loadmodel";
 }
