@@ -37,6 +37,7 @@ $c->read($ENV{MS_MAINT_CONFIG});
 #Logging in ModelSEED admin account
 my $token = Bio::KBase::AuthToken->new(user_id => $c->param("msmaint.kbuser"), password => $c->param("msmaint.kbpassword"));
 $token = $token->token();
+print STDERR "Username:".$c->param("msmaint.kbuser")."\n\n";
 print STDERR "TOKEN:".$token."\n\n";
 #Getting clients
 my $wserv = Bio::KBase::workspace::Client->new($c->param("msmaint.ws-url"));
