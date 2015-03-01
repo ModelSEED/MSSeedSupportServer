@@ -214,6 +214,7 @@ if ($stage eq "loadgenome") {
 			print "test8\n";
 			save_workspace_object("ModelSEEDGenomes/".$genome.".contigset",$contigset,"KBaseGenomes.ContigSet");
 			save_workspace_object("ModelSEEDGenomes/".$genome,$genomeobj,"KBaseGenomes.Genome");
+		}
 	}
 	$stage = "loadmodel";
 }
