@@ -212,10 +212,15 @@ if ($stage eq "loadgenome") {
 			}
 			$genomeobj->{md5} = Digest::MD5::md5_hex(join(";",sort { $a cmp $b } @{$md5list}));
 			print "test8\n";
-			save_workspace_object("ModelSEEDGenomes/".$genome.".contigset",$contigset,"KBaseGenomes.ContigSet");
-			save_workspace_object("ModelSEEDGenomes/".$genome,$genomeobj,"KBaseGenomes.Genome");
+			$wserv->save_objects({
+		    	objects => [
+		    		{name => $genome.".contigset",type => "KBaseGenomes.ContigSet",data => $contigset,provenance => []},
+		    		{name => $genome,type => "KBaseGenomes.Genome",data => $genomeobj,provenance => []}
+		    	],
+		    	workspace => "ModelSEEDGenomes"
+		    });
 		}
-	}
+    }
 	$stage = "loadmodel";
 }
 if ($stage eq "loadmodel") {
