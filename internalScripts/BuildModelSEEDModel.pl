@@ -195,9 +195,11 @@ if ($stage eq "loadgenome") {
 					co_occurring_fids => [],
 					protein_translation => $figv->get_translation($Row->[0]),
 				};
-				$feature->{md5} = Digest::MD5::md5_hex($feature->{protein_translation});
-				$feature->{protein_translation_length} = length($feature->{protein_translation});
-				$feature->{dna_sequence_length} = 3*$feature->{protein_translation_length};
+				if (defined($feature->{protein_translation})) {
+					$feature->{md5} = Digest::MD5::md5_hex($feature->{protein_translation});
+					$feature->{protein_translation_length} = length($feature->{protein_translation});
+					$feature->{dna_sequence_length} = 3*$feature->{protein_translation_length};
+				}
 				if (defined($Row->[6])) {
 					$feature->{function} = $Row->[6];
 				}
