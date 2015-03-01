@@ -112,7 +112,11 @@ if ($stage eq "loadgenome") {
 		        die("Could not load genome in FIGV for ".$genome);
 			}
 			print "test7\n";
-			my $completetaxonomy = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome}."/TAXONOMY","\t")->[0];
+			open(my $fh, "<", "/vol/rast-prod/jobs/".$jobid."/rp/".$genome."/TAXONOMY");
+			my $completetaxonomy = <$fh>;
+			my $array = [split(/\t/,$completetaxonomy)];
+			$completetaxonomy = $array->[0];
+			close($fh);
 			$completetaxonomy =~ s/;\s/;/g;
 			my $taxArray = [split(/;/,$completetaxonomy)];
 			my $speciesname = pop(@{$taxArray});
@@ -131,7 +135,7 @@ if ($stage eq "loadgenome") {
 				scientific_name => $speciesname,
 				domain => $taxArray->[0],
 				genetic_code => 11,
-				dna_size => $figv->genome_szdna($genome);,
+				dna_size => $figv->genome_szdna($genome),
 				num_contigs => 0,
 				contig_lengths => [],
 				contig_ids => [],
