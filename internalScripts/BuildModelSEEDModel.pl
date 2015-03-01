@@ -2,6 +2,8 @@
 
 use strict;
 use warnings;
+use DBI;
+use File::Path;
 use Data::Dumper;
 use Config::Simple;
 use Bio::KBase::workspace::ScriptHelpers qw(printObjectInfo get_ws_client workspace workspaceURL parseObjectMeta parseWorkspaceMeta printObjectMeta);
@@ -84,13 +86,121 @@ if ($stage eq "loadgenome") {
 				}
 			});
 		} else {
-			$output = $fbaserv->genome_to_workspace({
-				genome => $genome,
-				workspace => "ModelSEEDGenomes",
-				sourceLogin => $c->param("msmaint.rastlogin"),
-				sourcePassword => $c->param("msmaint.rastpassword"),
-				source => "rast"
-			});
+			my $db = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306", "rast");
+			if (!defined($db)) {
+				die("Could not connect to database!");
+			}
+			my $columns = {
+				_id		 => 1,
+				id		  => 1,
+				genome_id   => 1
+			};
+			my $jobs = $db->selectall_arrayref("SELECT * FROM Job WHERE Job.genome_id = ?", { Slice => $columns }, $genome);
+			$db->disconnect;
+			my $jobid = $jobs->[0]->{id};
+			if (!defined($jobid)) {
+				die("Could not find job ID for ".$genome);
+			}
+			my $directory = "/vol/rast-prod/jobs/".$jobid."/rp/".$genome;
+		    require FIGV;
+		    my $figv = new FIGV($directory);
+		    if (!defined($figv)) {
+		        die("Could not load genome in FIGV for ".$genome);
+			}
+			my $completetaxonomy = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/rp/".$params->{genome}."/TAXONOMY","\t")->[0];
+			$completetaxonomy =~ s/;\s/;/g;
+			my $taxArray = [split(/;/,$completetaxonomy)];
+			my $speciesname = pop(@{$taxArray});
+			my $taxonomy = join("|",@{$taxArray});
+		    my $contigset = {
+				id => $genome,
+				name => $speciesname,
+				source_id => $genome,
+				source => "RAST:".$jobid,
+				type => "Organism",
+				contigs => []
+		    };    
+		    my @contigs = $figv->all_contigs($genome);
+			my $genomeobj = {
+				id => $genome,
+				scientific_name => $speciesname,
+				domain => $taxArray->[0],
+				genetic_code => 11,
+				dna_size => $figv->genome_szdna($genome);,
+				num_contigs => 0,
+				contig_lengths => [],
+				contig_ids => [],
+				source => "RAST:".$jobid,
+				source_id => $genome,
+				taxonomy => $taxonomy,
+				gc_content => 0.5,
+				complete => 1,
+				publications => [],
+				features => [],
+		    };
+			my $md5list = [];
+			my $gccount = 0;
+			for (my $i=0; $i < @contigs; $i++) {
+				$genomeobj->{num_contigs}++;
+				my $contigLength = $figv->contig_ln($genome,$contigs[$i]);
+				push(@{$contigset->{contig_lengths}},$contigLength);
+				push(@{$contigset->{contig_ids}},$contigs[$i]);
+				my $sequence = $figv->get_dna($genome,$contigs[$i],1,$contigLength);
+				my $md5 = Digest::MD5::md5_hex($sequence);
+				push(@{$contigset->{contigs}},{
+					id => $contigs[$i],
+					"length" => $contigLength,
+					md5 => $md5,
+					sequence => $sequence,
+					genetic_code => 11,
+					name => $contigs[$i]
+				});
+				for ( my $j = 0 ; $j < length($sequence) ; $j++ ) {
+					if ( substr( $sequence, $j, 1 ) =~ m/[gcGC]/ ) {
+						$gccount++;
+					}
+				}
+				push(@{$md5list},$md5);
+			}
+			$genomeobj->{gc_content} = $gccount/$genomeobj->{dna_size};
+		    my $GenomeData = $figv->all_features_detailed_fast($genome);
+			foreach my $Row (@{$GenomeData}) {
+				my $feature = {
+					id => $Row->[0],
+					function => "hypothetical protein",
+					type => $Row->[3],
+					publications => [],
+					subsystems => [],
+					protein_families => [],
+					aliases => [split(/,/,$Row->[2])],
+					annotations => [],
+					subsystem_data => [],
+					regulon_data => [],
+					atomic_regulons => [],
+					coexpressed_fids => [],
+					co_occurring_fids => [],
+					protein_translation => $figv->get_translation($Row->[0]),
+				};
+				$feature->{md5} = Digest::MD5::md5_hex($feature->{protein_translation});
+				$feature->{protein_translation_length} = length($feature->{protein_translation});
+				$feature->{dna_sequence_length} = 3*$feature->{protein_translation_length};
+				if (defined($Row->[6])) {
+					$feature->{function} = $Row->[6];
+				}
+				if ($Row->[1] =~ m/^(.+)_(\d+)([\+\-_])(\d+)$/) {
+					if ($3 eq "-" || $3 eq "+") {
+						$feature->{location} = [[$1,$2,$3,$4]];
+					} elsif ($2 > $4) {
+						$feature->{location} = [[$1,$2,"-",($2-$4)]];
+					} else {
+						$feature->{location} = [[$1,$2,"+",($4-$2)]];
+					}
+					$feature->{location}->[0]->[1] = $feature->{location}->[0]->[1]+0;
+					$feature->{location}->[0]->[3] = $feature->{location}->[0]->[3]+0;
+				}
+				push(@{$genomeobj->{features}},$feature);
+			}
+			$genomeobj->{md5} = Digest::MD5::md5_hex(join(";",sort { $a cmp $b } @{$md5list}));
 		}
 	}
 	$stage = "loadmodel";
