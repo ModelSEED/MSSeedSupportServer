@@ -221,6 +221,7 @@ if ($stage eq "loadgenome") {
 				push(@{$genomeobj->{features}},$feature);
 			}
 			$genomeobj->{md5} = Digest::MD5::md5_hex(join(";",sort { $a cmp $b } @{$md5list}));
+			$contigset->{md5} = $genomeobj->{md5};
 			print "test8\n";
 			$wserv->save_objects({
 		    	objects => [
