@@ -143,7 +143,7 @@ if ($stage eq "loadgenome") {
 				scientific_name => $speciesname,
 				domain => $taxArray->[0],
 				genetic_code => 11,
-				dna_size => $figv->genome_szdna($genome),
+				dna_size => $figv->genome_szdna($genome)+0,
 				num_contigs => 0,
 				contig_lengths => [],
 				contig_ids => [],
@@ -167,7 +167,7 @@ if ($stage eq "loadgenome") {
 				my $md5 = Digest::MD5::md5_hex($sequence);
 				push(@{$contigset->{contigs}},{
 					id => $contigs[$i],
-					"length" => $contigLength,
+					"length" => $contigLength+0,
 					md5 => $md5,
 					sequence => $sequence,
 					genetic_code => 11,
@@ -201,8 +201,8 @@ if ($stage eq "loadgenome") {
 				};
 				if (defined($feature->{protein_translation})) {
 					$feature->{md5} = Digest::MD5::md5_hex($feature->{protein_translation});
-					$feature->{protein_translation_length} = length($feature->{protein_translation});
-					$feature->{dna_sequence_length} = 3*$feature->{protein_translation_length};
+					$feature->{protein_translation_length} = length($feature->{protein_translation})+0;
+					$feature->{dna_sequence_length} = (3*$feature->{protein_translation_length})+0;
 				}
 				if (defined($Row->[6])) {
 					$feature->{function} = $Row->[6];
