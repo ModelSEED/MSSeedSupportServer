@@ -226,6 +226,11 @@ if ($stage eq "loadgenome") {
 			$wserv->save_objects({
 		    	objects => [
 		    		{name => $genome.".contigset",type => "KBaseGenomes.ContigSet",data => $contigset,provenance => []},
+		    	],
+		    	workspace => "ModelSEEDGenomes"
+		    });
+		    $wserv->save_objects({
+		    	objects => [
 		    		{name => $genome,type => "KBaseGenomes.Genome",data => $genomeobj,provenance => []}
 		    	],
 		    	workspace => "ModelSEEDGenomes"
