@@ -69,7 +69,7 @@ my $columns = {
 	lastname  => 1,
 	email     => 1
 };
-my $users = $db->selectall_arrayref("SELECT * FROM User WHERE User.login = ?", { Slice => $columns }, "webappuser");
+my $users = $db->selectall_arrayref("SELECT * FROM User WHERE User.login = ?", { Slice => $columns }, $genomeowner);
 $db->disconnect;
 my $usrid = $users->[0]->{_id};
 print "User ID:".$usrid."\n";
