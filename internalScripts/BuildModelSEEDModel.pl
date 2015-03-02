@@ -34,9 +34,11 @@ if (!defined($ENV{MS_MAINT_CONFIG})) {
 	$ENV{MS_MAINT_CONFIG} = "/Users/chenry/code/deploy/msconfig.ini";
 }
 $c->read($ENV{MS_MAINT_CONFIG});
-#Logging in ModelSEED admin account
-my $token = Bio::KBase::AuthToken->new(user_id => $c->param("msmaint.kbuser"), password => $c->param("msmaint.kbpassword"));
-$token = $token->token();
+#Getting token for admin about
+if (!defined($ENV{MS_SEED_Support_Auth})) {
+	$ENV{MS_SEED_Support_Auth} = getToken();
+}
+my $token = $ENV{MS_SEED_Support_Auth};
 print STDERR "Username:".$c->param("msmaint.kbuser")."\n\n";
 print STDERR "TOKEN:".$token."\n\n";
 #Getting clients
