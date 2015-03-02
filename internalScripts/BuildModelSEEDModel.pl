@@ -39,8 +39,6 @@ if (!defined($ENV{MS_SEED_Support_Auth})) {
 	$ENV{MS_SEED_Support_Auth} = getToken();
 }
 my $token = $ENV{MS_SEED_Support_Auth};
-print STDERR "Username:".$c->param("msmaint.kbuser")."\n\n";
-print STDERR "TOKEN:".$token."\n\n";
 #Getting clients
 my $wserv = Bio::KBase::workspace::Client->new($c->param("msmaint.ws-url"));
 $wserv->{token} = $token;
@@ -72,16 +70,12 @@ my $columns = {
 my $users = $db->selectall_arrayref("SELECT * FROM User WHERE User.login = ?", { Slice => $columns }, $genomeowner);
 $db->disconnect;
 my $usrid = $users->[0]->{_id};
-print "User ID:".$usrid."\n";
 #Loading genome
-print "test0\n";
 if ($stage eq "loadgenome") {
 	print "Loading genome ".$genome."!\n";
 	#Checking for genome in model seed
 	my $loadgenome = 1;
-	print "test1\n";
 	if ($override == 0) {
-		print "test2\n";
 		eval {
 			$output = $wserv->get_object_info([{
 				workspace => "ModelSEEDGenomes",
@@ -93,7 +87,6 @@ if ($stage eq "loadgenome") {
 		}
 	}
 	if ($loadgenome == 1) {
-		print "test3\n";
 		eval {
 			$output = $wserv->get_object_info([{
 				workspace => "PubSEEDGenomes",
@@ -101,7 +94,6 @@ if ($stage eq "loadgenome") {
 			}],1);
 		};
 		if (defined($output)) {
-			print "test4\n";
 			$output = $wserv->copy_object({
 				from => {
 					workspace => "PubSEEDGenomes",
@@ -113,7 +105,6 @@ if ($stage eq "loadgenome") {
 				}
 			});
 		} else {
-			print "test5\n";
 			$db = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306", "rast");
 			if (!defined($db)) {
 				die("Could not connect to database!");
@@ -126,7 +117,6 @@ if ($stage eq "loadgenome") {
 			my $jobs = $db->selectall_arrayref("SELECT * FROM Job WHERE Job.genome_id = ?", { Slice => $columns }, $genome);
 			$db->disconnect;
 			my $jobid = $jobs->[0]->{id};
-			print "test6 ".$jobid."\n";
 			if (!defined($jobid)) {
 				die("Could not find job ID for ".$genome);
 			}
@@ -136,7 +126,6 @@ if ($stage eq "loadgenome") {
 		    if (!defined($figv)) {
 		        die("Could not load genome in FIGV for ".$genome);
 			}
-			print "test7\n";
 			open(my $fh, "<", "/vol/rast-prod/jobs/".$jobid."/rp/".$genome."/TAXONOMY");
 			my $completetaxonomy = <$fh>;
 			my $array = [split(/\t/,$completetaxonomy)];
@@ -241,7 +230,6 @@ if ($stage eq "loadgenome") {
 			}
 			$genomeobj->{md5} = Digest::MD5::md5_hex(join(";",sort { $a cmp $b } @{$md5list}));
 			$contigset->{md5} = $genomeobj->{md5};
-			print "test8\n";
 			$wserv->save_objects({
 		    	objects => [
 		    		{name => $genome.".contigset",type => "KBaseGenomes.ContigSet",data => $contigset,provenance => []},
