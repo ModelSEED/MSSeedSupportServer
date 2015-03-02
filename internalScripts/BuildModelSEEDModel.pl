@@ -265,7 +265,7 @@ if ($stage eq "loadtomodelseed") {
 	my $objs = $wserv->get_objects([{
 		workspace => "ModelSEEDGenomes",
 		name => $genome
-	}],1);
+	}]);
 	my $genomeobj = $objs->[0]->{data};
 	if (!defined($genomeobj->{taxonomy}) && defined($genomeobj->{domain})) {
 		$genomeobj->{taxonomy} = $genomeobj->{domain};
