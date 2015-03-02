@@ -56,6 +56,23 @@ if ($c->param("msmaint.fba-url") eq "impl") {
 $fbaserv->{token} = $token;
 $fbaserv->{client}->{token} = $token;
 my $mssserv = Bio::ModelSEED::MSSeedSupportServer::Client->new($c->param("msmaint.ms-url"));
+#Getting RAST user ID
+my $db = DBI->connect("DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306", "webappuser");
+if (!defined($db)) {
+	die("Could not connect to database!");
+}
+my $columns = {
+	_id       => 1,
+	login     => 1,
+	password  => 1,
+	firstname => 1,
+	lastname  => 1,
+	email     => 1
+};
+my $users = $db->selectall_arrayref("SELECT * FROM User WHERE User.login = ?", { Slice => $columns }, "webappuser");
+$db->disconnect;
+my $usrid = $users->[0]->{_id};
+print "User ID:".$usrid."\n";
 #Loading genome
 print "test0\n";
 if ($stage eq "loadgenome") {
@@ -97,11 +114,11 @@ if ($stage eq "loadgenome") {
 			});
 		} else {
 			print "test5\n";
-			my $db = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306", "rast");
+			$db = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306", "rast");
 			if (!defined($db)) {
 				die("Could not connect to database!");
 			}
-			my $columns = {
+			$columns = {
 				_id		 => 1,
 				id		  => 1,
 				genome_id   => 1
@@ -247,14 +264,15 @@ if ($stage eq "loadmodel") {
 		genome => $genome,
 		genome_workspace => "ModelSEEDGenomes",
 		workspace => "ModelSEEDModels",
-		model => "Seed".$genome
+		model => "Seed".$genome.".".$usrid
 	});
 	$stage = "gapfillmodel";
 }
 if ($stage eq "gapfillmodel") {
 	print "Gapfilling model ".$genome."!\n";
 	$output = $fbaserv->gapfill_model({
-		model => "Seed".$genome,
+		model => "Seed".$genome.".".$usrid,
+		integrate_solution => 1,
 		workspace => "ModelSEEDModels",
 		fastgapfill => 1
 	});
@@ -328,7 +346,7 @@ if ($stage eq "loadtomodelseed") {
 		}
 	}
 	my $mdldata = $fbaserv->export_fbamodel({
-		model => "Seed".$genome,
+		model => "Seed".$genome.".".$usrid,
 		format => "modelseed",
 		workspace => "ModelSEEDModels"
 	});
@@ -367,11 +385,13 @@ if ($stage eq "loadtomodelseed") {
 if ($stage eq "printsbml") {
 	print "Print SBML for model ".$genome."!\n";
 	$output = $fbaserv->export_fbamodel({
-		model => "Seed".$genome,
+		model => "Seed".$genome.".".$usrid,
 		format => "sbml",
 		workspace => "ModelSEEDModels"
 	});
-	print $output;
+	open(my $fh, ">", "/vol/model-dev/MODEL_DEV_DB/Models2/".$genomeowner."/Seed".$genome.".".$usrid."/0/model.sbml");
+	print $fh $output."\n";
+	close($fh);
 }
 
 1;
