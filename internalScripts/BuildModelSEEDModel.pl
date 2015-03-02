@@ -203,6 +203,8 @@ if ($stage eq "loadgenome") {
 					$feature->{md5} = Digest::MD5::md5_hex($feature->{protein_translation});
 					$feature->{protein_translation_length} = length($feature->{protein_translation})+0;
 					$feature->{dna_sequence_length} = (3*$feature->{protein_translation_length})+0;
+				} else {
+					delete $feature->{protein_translation};
 				}
 				if (defined($Row->[6])) {
 					$feature->{function} = $Row->[6];
