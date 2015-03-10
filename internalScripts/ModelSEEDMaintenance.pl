@@ -43,12 +43,7 @@ while (1) {
 		print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>In KBase</th><th>Gapfill reactions</th><th>Mod date</th></tr>\n";
 		my $mdllist = [];
 		for (my $i=0; $i < @{$models}; $i++) {
-			$mdlhash->{$models->[$i]->{id}} = $models->[$i];
-			if (defined($kbmdlhash->{$models->[$i]->{id}})) {
-				$models->[$i]->{inkbase} = 1;
-			} else {
-				$models->[$i]->{inkbase} = 1;
-			}
+			$models->[$i]->{inkbase} = 1;
 			if ($models->[$i]->{status} < 0 && $models->[$i]->{status} != -10) {
 				push(@{$mdllist},$i);
 			}
