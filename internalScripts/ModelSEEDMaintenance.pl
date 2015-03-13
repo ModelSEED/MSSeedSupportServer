@@ -39,16 +39,15 @@ while (1) {
 		print STATUS '<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">'."\n";
 		print STATUS '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><title>ModelSEED Status</title>'."\n";
 		my $datetime = DateTime->now()->datetime();
-		print STATUS "</head><body><p>Date of last update: ".$datetime."</p><br><table></body></html>\n";
-		print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>In KBase</th><th>Gapfill reactions</th><th>Mod date</th></tr>\n";
+		print STATUS "</head><body><p>Date of last update: ".$datetime."</p><br><p>Total models: ".@{$models}."</p><br><table>\n";
+		print STATUS "<tr><th>ID</th><th>Genome</th><th>Owner</th><th>Status</th><th>Reactions</th><th>Biomass</th><th>Gapfill reactions</th><th>Mod date</th></tr>\n";
 		my $mdllist = [];
-		for (my $i=0; $i < @{$models}; $i++) {
-			$models->[$i]->{inkbase} = 1;
-			if ($models->[$i]->{status} < 0 && $models->[$i]->{status} != -10) {
+		for (my $i=53519; $i < @{$models}; $i++) {
+			if ($models->[$i]->{status} == -1 ||  $models->[$i]->{status} == -2) {
 				push(@{$mdllist},$i);
 			}
 			$datetime = DateTime->from_epoch(epoch => $models->[$i]->{modificationDate})->datetime();
-			print STATUS "<tr><td>".$models->[$i]->{id}."</td><td>".$models->[$i]->{genome}."</td><td>".$models->[$i]->{owner}."</td><td>".$models->[$i]->{status}."</td><td>".$models->[$i]->{reactions}."</td><td>".$models->[$i]->{biomassReaction}."</td><td>".$models->[$i]->{inkbase}."</td><td>".$models->[$i]->{gapFillReactions}."</td><td>".$datetime."</td></tr>\n"; 
+			print STATUS "<tr><td>".$models->[$i]->{id}."</td><td>".$models->[$i]->{genome}."</td><td>".$models->[$i]->{owner}."</td><td>".$models->[$i]->{status}."</td><td>".$models->[$i]->{reactions}."</td><td>".$models->[$i]->{biomassReaction}."</td><td>".$models->[$i]->{gapFillReactions}."</td><td>".$datetime."</td></tr>\n"; 
 		}
 		print STATUS "</table></body></html>\n";
 		close(STATUS);
