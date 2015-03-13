@@ -170,7 +170,18 @@ if ($stage eq "loadgenome") {
 				push(@{$contigset->{contig_lengths}},$contigLength);
 				push(@{$contigset->{contig_ids}},$contigs[$i]);
 				my $sequence = $figv->get_dna($genome,$contigs[$i],1,$contigLength);
-				my $md5 = Digest::MD5::md5_hex($sequence);
+				my $md5 = "NA";
+				if (defined($sequence)) {
+					$md5 = Digest::MD5::md5_hex($sequence);
+					for ( my $j = 0 ; $j < length($sequence) ; $j++ ) {
+						if ( substr( $sequence, $j, 1 ) =~ m/[gcGC]/ ) {
+							$gccount++;
+						}
+					}
+				} else {
+					$sequence = "";
+					$gccount = 0.5*$contigLength;
+				}
 				push(@{$contigset->{contigs}},{
 					id => $contigs[$i],
 					"length" => $contigLength+0,
@@ -179,11 +190,6 @@ if ($stage eq "loadgenome") {
 					genetic_code => 11,
 					name => $contigs[$i]
 				});
-				for ( my $j = 0 ; $j < length($sequence) ; $j++ ) {
-					if ( substr( $sequence, $j, 1 ) =~ m/[gcGC]/ ) {
-						$gccount++;
-					}
-				}
 				push(@{$md5list},$md5);
 			}
 			$genomeobj->{gc_content} = $gccount/$genomeobj->{dna_size};
