@@ -14,7 +14,7 @@ print PID "$$\n";
 close(PID);
 #Running maintenance loop
 while (1) {
-	print "New loop - ".DateTime->now()->datetime()."\n";
+	print STDERR "New loop - ".DateTime->now()->datetime()."\n";
 	my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
 	if (defined($db)) {
 		my $models = $db->selectall_arrayref("SELECT * FROM ModelDB.MODEL", { Slice => {
@@ -53,6 +53,7 @@ while (1) {
 		close(STATUS);
 		#Calling model algorithm
 		for (my $i=0; $i < @{$mdllist}; $i++) {
+			print STDERR "Processing:".$models->[$i]->{genome}."\t".$models->[$i]->{owner}."\n";
 			system("perl /vol/model-prod/kbase/MSSeedSupportServer/internalScripts/BuildModelSEEDModel.pl ".$models->[$i]->{genome}." ".$models->[$i]->{owner}." loadgenome > /vol/model-prod/kbase/deploy/msjobs/".$models->[$i]->{genome}.".out");
 		}
 	}

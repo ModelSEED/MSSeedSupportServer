@@ -89,14 +89,14 @@ if ($stage eq "loadgenome") {
 	if ($loadgenome == 1) {
 		eval {
 			$output = $wserv->get_object_info([{
-				workspace => "PubSEEDGenomes",
+				workspace => "pubSEEDGenomes",
 				name => $genome
 			}],1);
 		};
 		if (defined($output)) {
 			$output = $wserv->copy_object({
 				from => {
-					workspace => "PubSEEDGenomes",
+					workspace => "pubSEEDGenomes",
 					name => $genome
 				},
 				to => {
