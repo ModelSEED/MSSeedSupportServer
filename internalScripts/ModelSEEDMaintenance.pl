@@ -53,8 +53,9 @@ while (1) {
 		close(STATUS);
 		#Calling model algorithm
 		for (my $i=0; $i < @{$mdllist}; $i++) {
-			print STDERR "Processing:".$models->[$i]->{genome}."\t".$models->[$i]->{owner}."\n";
-			system("perl /vol/model-prod/kbase/MSSeedSupportServer/internalScripts/BuildModelSEEDModel.pl ".$models->[$i]->{genome}." ".$models->[$i]->{owner}." loadgenome > /vol/model-prod/kbase/deploy/msjobs/".$models->[$i]->{genome}.".out");
+			my $index = $mdllist->[$i];
+			print STDERR "Processing:".$models->[$index]->{genome}."\t".$models->[$index]->{owner}."\t".DateTime->now()->datetime()."\n";
+			system("perl /vol/model-prod/kbase/MSSeedSupportServer/internalScripts/BuildModelSEEDModel.pl ".$models->[$index]->{genome}." ".$models->[$index]->{owner}." loadgenome > /vol/model-prod/kbase/deploy/msjobs/".$models->[$index]->{genome}.".out");
 		}
 	}
 	sleep(3600);
