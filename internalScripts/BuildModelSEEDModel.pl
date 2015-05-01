@@ -16,12 +16,25 @@ $|=1;
 my $genome = $ARGV[0];
 my $genomeowner = $ARGV[1];
 my $override = $ARGV[3];
+my $onestageonly = $ARGV[4];
+my $genomews = $ARGV[5];
+my $modelws = $ARGV[6];
 if (!defined($genome)) {
 	die "No genome specified!";
 }
 if (!defined($override)) {
 	$override = 0;
 }
+if (!defined($onestageonly)) {
+	$onestageonly = 0;
+}
+if (!defined($genomews)) {
+	$genomews = "ModelSEEDGenomes";
+}
+if (!defined($modelws)) {
+	$modelws = "ModelSEEDModels";
+}
+
 my $output;
 #Setting stage
 my $stage = $ARGV[2];
@@ -78,7 +91,7 @@ if ($stage eq "loadgenome") {
 	if ($override == 0) {
 		eval {
 			$output = $wserv->get_object_info([{
-				workspace => "ModelSEEDGenomes",
+				workspace => $genomews,
 				name => $genome
 			}],1);
 		};
@@ -100,7 +113,7 @@ if ($stage eq "loadgenome") {
 					name => $genome
 				},
 				to => {
-					workspace => "ModelSEEDGenomes",
+					workspace => $genomews,
 					name => $genome
 				}
 			});
@@ -160,7 +173,7 @@ if ($stage eq "loadgenome") {
 				complete => 1,
 				publications => [],
 				features => [],
-				contigset_ref => "ModelSEEDGenomes/".$genome.".contigset"
+				contigset_ref => $genomews."/".$genome.".contigset"
 		    };
 			my $md5list = [];
 			my $gccount = 0;
@@ -240,42 +253,48 @@ if ($stage eq "loadgenome") {
 		    	objects => [
 		    		{name => $genome.".contigset",type => "KBaseGenomes.ContigSet",data => $contigset,provenance => []},
 		    	],
-		    	workspace => "ModelSEEDGenomes"
+		    	workspace => $genomews
 		    });
 		    $wserv->save_objects({
 		    	objects => [
 		    		{name => $genome,type => "KBaseGenomes.Genome",data => $genomeobj,provenance => []}
 		    	],
-		    	workspace => "ModelSEEDGenomes"
+		    	workspace => $genomews
 		    });
 		}
     }
-	$stage = "loadmodel";
+    if (!defined($onestageonly) || $onestageonly == 0) {
+		$stage = "loadmodel";
+    }
 }
 if ($stage eq "loadmodel") {
 	print "Loading model ".$genome."!\n";
 	$output = $fbaserv->genome_to_fbamodel({
 		genome => $genome,
-		genome_workspace => "ModelSEEDGenomes",
-		workspace => "ModelSEEDModels",
+		genome_workspace => $genomews,
+		workspace => $modelws,
 		model => "Seed".$genome.".".$usrid
 	});
-	$stage = "gapfillmodel";
+	if (!defined($onestageonly) || $onestageonly == 0) {
+		$stage = "gapfillmodel";
+    }
 }
 if ($stage eq "gapfillmodel") {
 	print "Gapfilling model ".$genome."!\n";
 	$output = $fbaserv->gapfill_model({
 		model => "Seed".$genome.".".$usrid,
 		integrate_solution => 1,
-		workspace => "ModelSEEDModels",
+		workspace => $modelws,
 		fastgapfill => 1
 	});
-	$stage = "loadtomodelseed";
+	if (!defined($onestageonly) || $onestageonly == 0) {
+		$stage = "loadtomodelseed";
+    }
 }
 if ($stage eq "loadtomodelseed") {
 	print "Loading to modelseed for ".$genome."!\n";
 	my $objs = $wserv->get_objects([{
-		workspace => "ModelSEEDGenomes",
+		workspace => $genomews,
 		name => $genome
 	}]);
 	my $genomeobj = $objs->[0]->{data};
@@ -342,7 +361,7 @@ if ($stage eq "loadtomodelseed") {
 	my $mdldata = $fbaserv->export_fbamodel({
 		model => "Seed".$genome.".".$usrid,
 		format => "modelseed",
-		workspace => "ModelSEEDModels"
+		workspace => $modelws
 	});
 	my $lines = [split(/\n/,$mdldata)];
 	my $i;
@@ -374,14 +393,16 @@ if ($stage eq "loadtomodelseed") {
 		$input->{biomass} = $1;
 	}
 	$output = $mssserv->load_model_to_modelseed($input);
-	$stage = "printsbml";
+	if (!defined($onestageonly) || $onestageonly == 0) {
+		$stage = "printsbml";
+    }
 }
 if ($stage eq "printsbml") {
 	print "Print SBML for model ".$genome."!\n";
 	$output = $fbaserv->export_fbamodel({
 		model => "Seed".$genome.".".$usrid,
 		format => "sbml",
-		workspace => "ModelSEEDModels"
+		workspace => $modelws
 	});
 	open(my $fh, ">", "/vol/model-dev/MODEL_DEV_DB/Models2/".$genomeowner."/Seed".$genome.".".$usrid."/0/model.sbml");
 	print $fh $output."\n";
