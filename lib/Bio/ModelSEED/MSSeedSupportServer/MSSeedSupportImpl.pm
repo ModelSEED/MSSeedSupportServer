@@ -102,7 +102,7 @@ sub validate_args {
 			}
 		}
 	}
-	$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.";
+	$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.");
 	if (defined($optionalArguments)) {
 		foreach my $argument (keys(%{$optionalArguments})) {
 			if (!defined($args->{$argument})) {
