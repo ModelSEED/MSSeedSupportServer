@@ -61,7 +61,10 @@ sub is_admin {
 #Returns the method supplied to the service in the context object
 sub current_method {
 	my ($self) = @_;
-	return $CallContext->method;
+	if (defined($CallContext)) {
+		return $CallContext->method;
+	}
+	return undef;
 }
 
 #Returns hash with current server configuration
@@ -73,13 +76,19 @@ sub config {
 #Returns the authentication token supplied to the service in the context object
 sub token {
 	my($self) = @_;
-	return $CallContext->token;
+	if (defined($CallContext)) {
+		return $CallContext->token;
+	}
+	return undef;
 }
 
 #Returns the username supplied to the service in the context object
 sub user_id {
 	my ($self) = @_;
-	return $CallContext->user_id;
+	if (defined($CallContext)) {
+		return $CallContext->user_id;
+	}
+	return undef;
 }
 
 sub validate_args {
