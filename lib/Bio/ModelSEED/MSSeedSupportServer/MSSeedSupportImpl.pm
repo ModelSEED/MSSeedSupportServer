@@ -95,14 +95,18 @@ sub validate_args {
 			$args->{$original} = $args->{$substitutions->{$original}};
 		}
 	}
+	my $error = 0;
 	if (defined($mandatoryArguments)) {
 		for (my $i=0; $i < @{$mandatoryArguments}; $i++) {
 			if (!defined($args->{$mandatoryArguments->[$i]})) {
+				$error = 1;
 				push(@{$args->{_error}},$mandatoryArguments->[$i]);
 			}
 		}
 	}
-	$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.");
+	if ($error == 1) {
+		$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.");
+	}
 	if (defined($optionalArguments)) {
 		foreach my $argument (keys(%{$optionalArguments})) {
 			if (!defined($args->{$argument})) {
