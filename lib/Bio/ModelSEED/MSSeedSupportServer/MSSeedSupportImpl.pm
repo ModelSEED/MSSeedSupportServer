@@ -912,7 +912,7 @@ sub new
     };
     bless $self, $class;
     #BEGIN_CONSTRUCTOR
-    my $params = Bio::KBase::ObjectAPI::utilities::load_config({
+    my $params = $self->load_config({
     	service => "MSSeedSupport"
     });
     if (defined($args[0])) {
