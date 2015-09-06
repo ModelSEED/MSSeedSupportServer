@@ -175,7 +175,7 @@ class MSSeedSupportServer(object):
                           [params])
         return resp[0]
 
-    def list_rast_jobs(self, params):
+    def list_rast_jobs(self, input):
         resp = self._call('MSSeedSupportServer.list_rast_jobs',
-                          [params])
+                          [input])
         return resp[0]

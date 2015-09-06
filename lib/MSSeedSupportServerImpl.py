@@ -61,7 +61,7 @@ class MSSeedSupportServer:
         # return the results
         return [success]
 
-    def list_rast_jobs(self, ctx, params):
+    def list_rast_jobs(self, ctx, input):
         # ctx is the context object
         # return variables are: output
         #BEGIN list_rast_jobs

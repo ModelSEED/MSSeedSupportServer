@@ -317,7 +317,7 @@ sub load_model_to_modelseed
 
 =head2 list_rast_jobs
 
-  $output = $obj->list_rast_jobs($params)
+  $output = $obj->list_rast_jobs($input)
 
 =over 4
 
@@ -326,14 +326,21 @@ sub load_model_to_modelseed
 =begin html
 
 <pre>
-$params is a list_rast_jobs_params
+$input is a list_rast_jobs_params
 $output is a reference to a list where each element is a RASTJob
 list_rast_jobs_params is a reference to a hash where the following keys are defined:
-	user has a value which is a string
+	owner has a value which is a string
 RASTJob is a reference to a hash where the following keys are defined:
 	owner has a value which is a string
-	jobid has a value which is a string
+	project has a value which is a string
+	id has a value which is a string
+	creation_time has a value which is a string
+	mod_time has a value which is a string
+	genome_size has a value which is an int
+	contig_count has a value which is an int
 	genome_id has a value which is a string
+	genome_name has a value which is a string
+	type has a value which is a string
 
 </pre>
 
@@ -341,14 +348,21 @@ RASTJob is a reference to a hash where the following keys are defined:
 
 =begin text
 
-$params is a list_rast_jobs_params
+$input is a list_rast_jobs_params
 $output is a reference to a list where each element is a RASTJob
 list_rast_jobs_params is a reference to a hash where the following keys are defined:
-	user has a value which is a string
+	owner has a value which is a string
 RASTJob is a reference to a hash where the following keys are defined:
 	owner has a value which is a string
-	jobid has a value which is a string
+	project has a value which is a string
+	id has a value which is a string
+	creation_time has a value which is a string
+	mod_time has a value which is a string
+	genome_size has a value which is an int
+	contig_count has a value which is an int
 	genome_id has a value which is a string
+	genome_name has a value which is a string
+	type has a value which is a string
 
 
 =end text
@@ -373,10 +387,10 @@ sub list_rast_jobs
 							       "Invalid argument count for function list_rast_jobs (received $n, expecting 1)");
     }
     {
-	my($params) = @args;
+	my($input) = @args;
 
 	my @_bad_arguments;
-        (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument 1 \"params\" (value was \"$params\")");
+        (ref($input) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument 1 \"input\" (value was \"$input\")");
         if (@_bad_arguments) {
 	    my $msg = "Invalid arguments passed to list_rast_jobs:\n" . join("", map { "\t$_\n" } @_bad_arguments);
 	    Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
@@ -475,9 +489,16 @@ sub _validate_version {
 
 RAST job data
 
-        string owner - owner of the job
-        string jobid - ID of the job
-        string genome_id - ID of the genome created by the job
+string owner - owner of the job
+string project - project name
+string id - ID of the job
+string creation_time - time of creation
+string mod_time - time of modification
+int genome_size - size of genome
+int contig_count - number of contigs
+string genome_id - ID of the genome created by the job
+string genome_name - name of genome
+string type - type of job
 
 
 =item Definition
@@ -487,8 +508,15 @@ RAST job data
 <pre>
 a reference to a hash where the following keys are defined:
 owner has a value which is a string
-jobid has a value which is a string
+project has a value which is a string
+id has a value which is a string
+creation_time has a value which is a string
+mod_time has a value which is a string
+genome_size has a value which is an int
+contig_count has a value which is an int
 genome_id has a value which is a string
+genome_name has a value which is a string
+type has a value which is a string
 
 </pre>
 
@@ -498,8 +526,15 @@ genome_id has a value which is a string
 
 a reference to a hash where the following keys are defined:
 owner has a value which is a string
-jobid has a value which is a string
+project has a value which is a string
+id has a value which is a string
+creation_time has a value which is a string
+mod_time has a value which is a string
+genome_size has a value which is an int
+contig_count has a value which is an int
 genome_id has a value which is a string
+genome_name has a value which is a string
+type has a value which is a string
 
 
 =end text
@@ -672,7 +707,7 @@ biomass has a value which is a string
 
 Output for the "list_rast_jobs_params" function.
 
-        string user - user for whom jobs should be listed (optional - default is authenticated user)
+        string owner - user for whom jobs should be listed (optional - default is authenticated user)
 
 
 =item Definition
@@ -681,7 +716,7 @@ Output for the "list_rast_jobs_params" function.
 
 <pre>
 a reference to a hash where the following keys are defined:
-user has a value which is a string
+owner has a value which is a string
 
 </pre>
 
@@ -690,7 +725,7 @@ user has a value which is a string
 =begin text
 
 a reference to a hash where the following keys are defined:
-user has a value which is a string
+owner has a value which is a string
 
 
 =end text
