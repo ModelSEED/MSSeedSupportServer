@@ -185,7 +185,7 @@ sub get_user_object {
 
 sub get_user_job_objects {
 	my ($self,$field,$value) = @_;
-	my $db = $self->webapp_db();
+	my $db = $self->rast_db();
 	my $select = "SELECT * FROM Job WHERE Job.";
 	$select .= $field." = ?";
 	return $db->selectall_arrayref($select, { Slice => {} }, $value);
