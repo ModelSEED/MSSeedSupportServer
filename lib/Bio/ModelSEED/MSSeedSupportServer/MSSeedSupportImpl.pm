@@ -1419,6 +1419,8 @@ sub list_rast_jobs
     		$self->_error("Cannot request another user's jobs without admin privelages");
     	}
     }
+    print STDERR "User:".$self->user_id()."\n";
+    print STDERR "Owner:".$input->{owner}."\n";
     #Retrieving user data
     my $userobj = $self->get_user_object("login",$input->{owner});
     if (!defined($userobj)) {
