@@ -1419,15 +1419,16 @@ sub list_rast_jobs
     		$self->_error("Cannot request another user's jobs without admin privelages");
     	}
     }
-    print STDERR "User:".$self->user_id()."\n";
-    print STDERR "Owner:".$input->{owner}."\n";
     #Retrieving user data
     my $userobj = $self->get_user_object("login",$input->{owner});
     if (!defined($userobj)) {
     	$self->_error("User ".$input->{owner}." not found!");
     }
+    print STDERR "User:".$self->user_id()."\n";
+    print STDERR "Owner:".$input->{owner}."\n";
+    print STDERR "_id:".$userobj->{_id}."\n";
     #Retrieving jobs
-    my $jobs = $self->get_user_job_objects("_id",$userobj->{_id});
+    my $jobs = $self->get_user_job_objects("owner",$userobj->{_id});
     $output = [];
     for (my $i=0; $i < @{$jobs}; $i++) {
     	push(@{$output},{
