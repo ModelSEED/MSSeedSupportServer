@@ -933,7 +933,7 @@ sub new
     		$params->{$key} = $args[0]->{$key};
     	}
     }
-	$params = $self->validate_args($params,[""],{
+	$params = $self->validate_args($params,[],{
 		"admins" => undef
 	});
 	$self->{_admins} = {};
