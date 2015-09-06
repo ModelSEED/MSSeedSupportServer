@@ -10,6 +10,7 @@ from jsonrpcbase import JSONRPCService, InvalidParamsError, KeywordError,\
 from os import environ
 from ConfigParser import ConfigParser
 from biokbase import log
+import biokbase.nexus
 
 DEPLOY = 'KB_DEPLOYMENT_CONFIG'
 SERVICE = 'KB_SERVICE_NAME'
@@ -262,30 +263,24 @@ class Application(object):
             call_id=True, logfile=self.userlog.get_log_file())
         self.serverlog.set_log_level(6)
         self.rpc_service = JSONRPCServiceCustom()
+        self.method_authentication = dict()
         self.rpc_service.add(impl_MSSeedSupportServer.getRastGenomeData,
                              name='MSSeedSupportServer.getRastGenomeData',
                              types=[dict])
-        self.rpc_service.add(impl_MSSeedSupportServer.get_user_info,
-                             name='MSSeedSupportServer.get_user_info',
-                             types=[dict])
-        self.rpc_service.add(impl_MSSeedSupportServer.authenticate,
-                             name='MSSeedSupportServer.authenticate',
-                             types=[dict])
+        self.method_authentication['MSSeedSupportServer.getRastGenomeData'] = 'none'
         self.rpc_service.add(impl_MSSeedSupportServer.load_model_to_modelseed,
                              name='MSSeedSupportServer.load_model_to_modelseed',
                              types=[dict])
-        self.rpc_service.add(impl_MSSeedSupportServer.create_plantseed_job,
-                             name='MSSeedSupportServer.create_plantseed_job',
+        self.method_authentication['MSSeedSupportServer.load_model_to_modelseed'] = 'none'
+        self.rpc_service.add(impl_MSSeedSupportServer.list_rast_jobs,
+                             name='MSSeedSupportServer.list_rast_jobs',
                              types=[dict])
-        self.rpc_service.add(impl_MSSeedSupportServer.get_plantseed_genomes,
-                             name='MSSeedSupportServer.get_plantseed_genomes',
-                             types=[dict])
-        self.rpc_service.add(impl_MSSeedSupportServer.kblogin,
-                             name='MSSeedSupportServer.kblogin',
-                             types=[dict])
-        self.rpc_service.add(impl_MSSeedSupportServer.kblogin_from_token,
-                             name='MSSeedSupportServer.kblogin_from_token',
-                             types=[dict])
+        self.method_authentication['MSSeedSupportServer.list_rast_jobs'] = 'required'
+        self.auth_client = biokbase.nexus.Client(
+            config={'server': 'nexus.api.globusonline.org',
+                    'verify_ssl': True,
+                    'client': None,
+                    'client_secret': None})
 
     def __call__(self, environ, start_response):
         # Context object, equivalent to the perl impl CallContext
@@ -316,6 +311,32 @@ class Application(object):
                 ctx['module'], ctx['method'] = req['method'].split('.')
                 ctx['call_id'] = req['id']
                 try:
+                    token = environ.get('HTTP_AUTHORIZATION')
+                    # parse out the method being requested and check if it
+                    # has an authentication requirement
+                    auth_req = self.method_authentication.get(req['method'],
+                                                              "none")
+                    if auth_req != "none":
+                        if token is None and auth_req == 'required':
+                            err = ServerError()
+                            err.data = "Authentication required for " + \
+                                "MSSeedSupportServer but no authentication header was passed"
+                            raise err
+                        elif token is None and auth_req == 'optional':
+                            pass
+                        else:
+                            try:
+                                user, _, _ = \
+                                    self.auth_client.validate_token(token)
+                                ctx['user_id'] = user
+                                ctx['authenticated'] = 1
+                                ctx['token'] = token
+                            except Exception, e:
+                                if auth_req == 'required':
+                                    err = ServerError()
+                                    err.data = \
+                                        "Token validation failed: %s" % e
+                                    raise err
                     if (environ.get('HTTP_X_FORWARDED_FOR')):
                         self.log(log.INFO, ctx, 'X-Forwarded-For: ' +
                                  environ.get('HTTP_X_FORWARDED_FOR'))

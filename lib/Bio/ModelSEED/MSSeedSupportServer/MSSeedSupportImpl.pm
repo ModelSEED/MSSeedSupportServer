@@ -1,4 +1,4 @@
-package Bio::ModelSEED::MSSeedSupportServer::Impl;
+package Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportImpl;
 use strict;
 use Bio::KBase::Exceptions;
 # Use Semantic Versioning (2.0.0-rc.1)
@@ -31,24 +31,86 @@ use File::Path;
 use SOAP::Lite;
 use Bio::KBase::fbaModelServices::Client;
 use Bio::KBase::workspaceService::Client;
-sub _setContext {
-	my ($self,$params) = @_;
-    if (defined($params->{username}) && length($params->{username}) > 0) {
-		my $user = $self->_authenticate_user($params->{username},$params->{password});
-		$self->_getContext()->{_userobj} = $user;
-    }
+use JSON::XS;
+use Data::Dumper;
+use Config::Simple;
+use Plack::Request;
+
+#
+# Alias our context variable.
+#
+*Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportImpl::CallContext = *Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
+our $CallContext;
+
+#Initialization function for call
+sub initialize_call {
+	my ($self,$input) = @_;
+	$self->{_starttime} = time();
+	return $input;
 }
 
-sub _getContext {
+#Check if logged user has admin privelages
+sub is_admin {
 	my ($self) = @_;
-	if (!defined($Bio::ModelSEED::MSSeedSupportServer::Server::CallContext)) {
-		$Bio::ModelSEED::MSSeedSupportServer::Server::CallContext = {};
+	if (defined($self->{_admins}->{$self->user_id()})) {
+		return 1;
 	}
-	return $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
+	return 0;
 }
 
-sub _clearContext {
+#Returns the method supplied to the service in the context object
+sub current_method {
 	my ($self) = @_;
+	return $CallContext->method;
+}
+
+#Returns hash with current server configuration
+sub config {
+	my($self) = @_;
+	return $self->{_config};
+}
+
+#Returns the authentication token supplied to the service in the context object
+sub token {
+	my($self) = @_;
+	return $CallContext->token;
+}
+
+#Returns the username supplied to the service in the context object
+sub user_id {
+	my ($self) = @_;
+	return $CallContext->user_id;
+}
+
+sub validate_args {
+	my ($self,$args,$mandatoryArguments,$optionalArguments,$substitutions) = @_;
+	if (!defined($args)) {
+	    $args = {};
+	}
+	if (ref($args) ne "HASH") {
+		$self->_error("Arguments not hash");	
+	}
+	if (defined($substitutions) && ref($substitutions) eq "HASH") {
+		foreach my $original (keys(%{$substitutions})) {
+			$args->{$original} = $args->{$substitutions->{$original}};
+		}
+	}
+	if (defined($mandatoryArguments)) {
+		for (my $i=0; $i < @{$mandatoryArguments}; $i++) {
+			if (!defined($args->{$mandatoryArguments->[$i]})) {
+				push(@{$args->{_error}},$mandatoryArguments->[$i]);
+			}
+		}
+	}
+	$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.";
+	if (defined($optionalArguments)) {
+		foreach my $argument (keys(%{$optionalArguments})) {
+			if (!defined($args->{$argument})) {
+				$args->{$argument} = $optionalArguments->{$argument};
+			}
+		}	
+	}
+	return $args;
 }
 
 =head3 _error
@@ -61,9 +123,51 @@ Description:
 =cut
 
 sub _error {
-	my($self,$msg,$method) = @_;
+	my($self,$msg) = @_;
 	$msg = "ERROR{".$msg."}ERROR";
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,method_name => $method);
+	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,method_name => $self->current_method);
+}
+
+sub get_user_object {
+	my ($self,$field,$value) = @_;
+	my $db = $self->webapp_db();
+	my $select = "SELECT * FROM User WHERE User.";
+	$select .= $field." = ?";
+    my $users = $db->selectall_arrayref($select, { Slice => {} }, $value);
+	if (!defined($users) || scalar @$users == 0) {
+        $self->_error("Username not found!");
+    }
+    return $users->[0];
+}
+
+sub get_user_job_objects {
+	my ($self,$field,$value) = @_;
+	my $db = $self->webapp_db();
+	my $select = "SELECT * FROM Job WHERE Job.";
+	$select .= $field." = ?";
+	return $db->selectall_arrayref($select, { Slice => {} }, $value);
+}
+
+sub webapp_db {
+	my ($self) = @_;
+	if (!defined($self->{_webappdb})) {
+    	$self->{_webappdb} = DBI->connect("DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+    	if (!defined($self->{_webappdb})) {
+        	$self->_error("Could not connect to user database!");
+    	}
+	}
+	return $self->{_webappdb};
+}
+
+sub rast_db {
+	my ($self) = @_;
+	if (!defined($self->{_rast_db})) {
+    	$self->{_rast_db} = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306","rast");
+    	if (!defined($self->{_rast_db})) {
+        	$self->_error("Could not connect to rast database!");
+    	}
+	}
+	return $self->{_rast_db};
 }
 
 sub _getUserObj {
@@ -778,6 +882,26 @@ sub new
     };
     bless $self, $class;
     #BEGIN_CONSTRUCTOR
+    my $params = Bio::KBase::ObjectAPI::utilities::load_config({
+    	service => "MSSeedSupport"
+    });
+    if (defined($args[0])) {
+    	foreach my $key (keys(%{$args[0]})) {
+    		$params->{$key} = $args[0]->{$key};
+    	}
+    }
+	$params = $self->validate_args($params,[""],{
+		"admins" => undef
+	});
+	$self->{_admins} = {};
+	if (defined($params->{admins})) {
+		my $array = [split(/;/,$params->{admins})];
+		for (my $i=0; $i < @{$array}; $i++) {
+			$self->{_admins}->{$array->[$i]} = 1;
+		}
+	}
+	print "Current server configuration:\n".Data::Dumper->Dump([$params]);
+	$self->{_config} = $params;
     #END_CONSTRUCTOR
 
     if ($self->can('_init_instance'))
@@ -959,176 +1083,6 @@ sub getRastGenomeData
 							       method_name => 'getRastGenomeData');
     }
     return($output);
-}
-
-
-
-
-=head2 get_user_info
-
-  $output = $obj->get_user_info($params)
-
-=over 4
-
-=item Parameter and return types
-
-=begin html
-
-<pre>
-$params is a get_user_info_params
-$output is a SEEDUser
-get_user_info_params is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-SEEDUser is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-	firstname has a value which is a string
-	lastname has a value which is a string
-	email has a value which is a string
-	id has a value which is an int
-
-</pre>
-
-=end html
-
-=begin text
-
-$params is a get_user_info_params
-$output is a SEEDUser
-get_user_info_params is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-SEEDUser is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-	firstname has a value which is a string
-	lastname has a value which is a string
-	email has a value which is a string
-	id has a value which is an int
-
-
-=end text
-
-
-
-=item Description
-
-Retrieves a RAST genome based on the input genome ID
-
-=back
-
-=cut
-
-sub get_user_info
-{
-    my $self = shift;
-    my($params) = @_;
-
-    my @_bad_arguments;
-    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
-    if (@_bad_arguments) {
-	my $msg = "Invalid arguments passed to get_user_info:\n" . join("", map { "\t$_\n" } @_bad_arguments);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'get_user_info');
-    }
-
-    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
-    my($output);
-    #BEGIN get_user_info
-    $self->_setContext($params);
-    $params = $self->_validateargs($params,[],{});
-    if (!defined($self->_userobj())) {
-    	$self->_error("Must provide valid username and password!",
-        'get_user_info');
-    }
-	$output = $self->_userobj();
-    #END get_user_info
-    my @_bad_returns;
-    (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
-    if (@_bad_returns) {
-	my $msg = "Invalid returns passed to get_user_info:\n" . join("", map { "\t$_\n" } @_bad_returns);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'get_user_info');
-    }
-    return($output);
-}
-
-
-
-
-=head2 authenticate
-
-  $username = $obj->authenticate($params)
-
-=over 4
-
-=item Parameter and return types
-
-=begin html
-
-<pre>
-$params is an authenticate_params
-$username is a string
-authenticate_params is a reference to a hash where the following keys are defined:
-	token has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-$params is an authenticate_params
-$username is a string
-authenticate_params is a reference to a hash where the following keys are defined:
-	token has a value which is a string
-
-
-=end text
-
-
-
-=item Description
-
-Authenticate against the SEED account
-
-=back
-
-=cut
-
-sub authenticate
-{
-    my $self = shift;
-    my($params) = @_;
-
-    my @_bad_arguments;
-    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
-    if (@_bad_arguments) {
-	my $msg = "Invalid arguments passed to authenticate:\n" . join("", map { "\t$_\n" } @_bad_arguments);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'authenticate');
-    }
-
-    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
-    my($username);
-    #BEGIN authenticate
-    $self->_setContext($params);
-    $params = $self->_validateargs($params,[],{});
-    if (!defined($self->_userobj())) {
-    	$self->_error("Must provide valid username and password!",
-        'get_user_info');
-    }
-    return $self->_userobj()->{username}."\t".$self->_userobj()->{password};
-    #END authenticate
-    my @_bad_returns;
-    (!ref($username)) or push(@_bad_returns, "Invalid type for return variable \"username\" (value was \"$username\")");
-    if (@_bad_returns) {
-	my $msg = "Invalid returns passed to authenticate:\n" . join("", map { "\t$_\n" } @_bad_returns);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'authenticate');
-    }
-    return($username);
 }
 
 
@@ -1335,177 +1289,9 @@ sub load_model_to_modelseed
 
 
 
-=head2 create_plantseed_job
+=head2 list_rast_jobs
 
-  $output = $obj->create_plantseed_job($params)
-
-=over 4
-
-=item Parameter and return types
-
-=begin html
-
-<pre>
-$params is a create_plantseed_job_params
-$output is a JobObject
-create_plantseed_job_params is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-	fasta has a value which is a string
-	contigid has a value which is a string
-	source has a value which is a string
-	genetic_code has a value which is a string
-	domain has a value which is a string
-	scientific_name has a value which is a string
-JobObject is a reference to a hash where the following keys are defined:
-	id has a value which is a string
-	type has a value which is a string
-	auth has a value which is a string
-	status has a value which is a string
-	jobdata has a value which is a reference to a hash where the key is a string and the value is a string
-	queuetime has a value which is a string
-	starttime has a value which is a string
-	completetime has a value which is a string
-	owner has a value which is a string
-	queuecommand has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-$params is a create_plantseed_job_params
-$output is a JobObject
-create_plantseed_job_params is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-	fasta has a value which is a string
-	contigid has a value which is a string
-	source has a value which is a string
-	genetic_code has a value which is a string
-	domain has a value which is a string
-	scientific_name has a value which is a string
-JobObject is a reference to a hash where the following keys are defined:
-	id has a value which is a string
-	type has a value which is a string
-	auth has a value which is a string
-	status has a value which is a string
-	jobdata has a value which is a reference to a hash where the key is a string and the value is a string
-	queuetime has a value which is a string
-	starttime has a value which is a string
-	completetime has a value which is a string
-	owner has a value which is a string
-	queuecommand has a value which is a string
-
-
-=end text
-
-
-
-=item Description
-
-Creates a plant seed job for the input fasta file
-
-=back
-
-=cut
-
-sub create_plantseed_job
-{
-    my $self = shift;
-    my($params) = @_;
-
-    my @_bad_arguments;
-    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
-    if (@_bad_arguments) {
-	my $msg = "Invalid arguments passed to create_plantseed_job:\n" . join("", map { "\t$_\n" } @_bad_arguments);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'create_plantseed_job');
-    }
-
-    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
-    my($output);
-    #BEGIN create_plantseed_job
-    $self->_setContext($params);
-    $params = $self->_validateargs($params,["fasta","proteins","name"],{});
-    #Making sure a user is logged in
-    if (!defined($self->_userobj())) {
-    	$self->_error("Must be logged in to create PlantSEED job!","create_plantseed_job");
-    }
-    #Getting KBase auth token for PlantSEED workspace
-    my $auth = join("\n",@{$self->_load_single_column_file("/vol/model-prod/plantseed-auth")});
-    #Getting new genome ID for PlantSEED genome
-    my $service_url = "http://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";
-	my $proxy = SOAP::Lite->uri('http://www.soaplite.com/Scripts')->proxy($service_url);
-	my $r = $proxy->register_genome("7777777");
-	if ($r->fault) {
-	    $self->_error("Failed to register 7777777 with ACH: ".$r->faultcode .":".$r->faultstring);
-	}
-    my $genomeid = "7777777.".$r->result();
-	my $jobdata = {
-		workspace => "Private_PlantSEED",
-		fbaurl => 'http://140.221.85.73:4043',
-		genome_id => $genomeid,
-		user_id => $self->_userobj()->{id},
-		owner => $self->_userobj()->{username},
-		name => $params->{name}
-	};
-    if ($params->{proteins}) {
-    	my $object = $self->_fbaserv()->fasta_to_ProteinSet({
-    		uid => "ProteinSet.".$genomeid.".".$self->_userobj()->{id},
-    		fasta => $params->{fasta},
-    		workspace => "Private_PlantSEED",
-    		auth => $auth,
-    		name => $params->{name},
-    		sourceid => $genomeid,
-    		source => "PlantSEED",
-    		type => "Plant"
-    	});
-    	$jobdata->{ProteinSet_uid} = "ProteinSet.".$genomeid.".".$self->_userobj()->{id};
-    	$jobdata->{ProteinSet_ws} = "Private_PlantSEED";
-    	$jobdata->{ProteinSet_inst} = $object->[3];
-    } else {
-    	my $object = $self->_fbaserv()->fasta_to_TranscriptSet({
-    		uid => "TranscriptSet.".$genomeid.".".$self->_userobj()->{id},
-    		fasta => $params->{fasta},
-    		workspace => "Private_PlantSEED",
-    		auth => $auth,
-    		name => $params->{name},
-    		sourceid => $genomeid,
-    		source => "PlantSEED",
-    		type => "Plant"
-    	});
-    	$jobdata->{TranscriptSet_uid} = "TranscriptSet.".$genomeid.".".$self->_userobj()->{id};
-    	$jobdata->{TranscriptSet_ws} = "Private_PlantSEED";
-    	$jobdata->{TranscriptSet_inst} = $object->[3];
-    }
-    my $job = $self->_wsserv()->queue_job({
-		auth => $auth,
-		type => "PlantSEED",
-		jobdata => $jobdata,
-		queuecommand => "create_plantseed_job",
-		"state" => "queued"
-	});
-	$job->{genomeid} = $genomeid.".".$self->_userobj()->{id};
-    $output = $job;
-    #END create_plantseed_job
-    my @_bad_returns;
-    (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
-    if (@_bad_returns) {
-	my $msg = "Invalid returns passed to create_plantseed_job:\n" . join("", map { "\t$_\n" } @_bad_returns);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'create_plantseed_job');
-    }
-    return($output);
-}
-
-
-
-
-=head2 get_plantseed_genomes
-
-  $output = $obj->get_plantseed_genomes($params)
+  $output = $obj->list_rast_jobs($params)
 
 =over 4
 
@@ -1514,17 +1300,14 @@ sub create_plantseed_job
 =begin html
 
 <pre>
-$params is a get_plantseed_genomes_params
-$output is a reference to a list where each element is a plantseed_genomes
-get_plantseed_genomes_params is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-plantseed_genomes is a reference to a hash where the following keys are defined:
+$params is a list_rast_jobs_params
+$output is a reference to a list where each element is a RASTJob
+list_rast_jobs_params is a reference to a hash where the following keys are defined:
+	user has a value which is a string
+RASTJob is a reference to a hash where the following keys are defined:
 	owner has a value which is a string
-	genome has a value which is a string
-	contigs has a value which is a string
-	model has a value which is a string
-	status has a value which is a string
+	jobid has a value which is a string
+	genome_id has a value which is a string
 
 </pre>
 
@@ -1532,17 +1315,14 @@ plantseed_genomes is a reference to a hash where the following keys are defined:
 
 =begin text
 
-$params is a get_plantseed_genomes_params
-$output is a reference to a list where each element is a plantseed_genomes
-get_plantseed_genomes_params is a reference to a hash where the following keys are defined:
-	username has a value which is a string
-	password has a value which is a string
-plantseed_genomes is a reference to a hash where the following keys are defined:
+$params is a list_rast_jobs_params
+$output is a reference to a list where each element is a RASTJob
+list_rast_jobs_params is a reference to a hash where the following keys are defined:
+	user has a value which is a string
+RASTJob is a reference to a hash where the following keys are defined:
 	owner has a value which is a string
-	genome has a value which is a string
-	contigs has a value which is a string
-	model has a value which is a string
-	status has a value which is a string
+	jobid has a value which is a string
+	genome_id has a value which is a string
 
 
 =end text
@@ -1551,13 +1331,13 @@ plantseed_genomes is a reference to a hash where the following keys are defined:
 
 =item Description
 
-Retrieves a list of plantseed genomes owned by user
+Retrieves a list of jobs owned by the specified RAST user
 
 =back
 
 =cut
 
-sub get_plantseed_genomes
+sub list_rast_jobs
 {
     my $self = shift;
     my($params) = @_;
@@ -1565,236 +1345,54 @@ sub get_plantseed_genomes
     my @_bad_arguments;
     (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
     if (@_bad_arguments) {
-	my $msg = "Invalid arguments passed to get_plantseed_genomes:\n" . join("", map { "\t$_\n" } @_bad_arguments);
+	my $msg = "Invalid arguments passed to list_rast_jobs:\n" . join("", map { "\t$_\n" } @_bad_arguments);
 	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'get_plantseed_genomes');
+							       method_name => 'list_rast_jobs');
     }
 
     my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
     my($output);
-    #BEGIN get_plantseed_genomes
-    $self->_setContext($params);
-    $params = $self->_validateargs($params,[],{});
-    if (!defined($self->_userobj())) {
-    	$self->_error("Must be logged in to retrieve PlantSEED job!","get_plantseed_genomes");
-    }
-    my $auth = join("\n",@{$self->_load_single_column_file("/vol/model-prod/plantseed-auth")});  
-    my $objs = $self->_wsserv()->list_workspace_objects({
-    	workspace => "Private_PlantSEED",
-    	type => "Genome",
-    	auth => $auth
+    #BEGIN list_rast_jobs
+    $input = $self->initialize_call($input);
+    $input = $self->validate_args($input,[],{
+    	owner => $self->user_id()
     });
-    my $mdlobjs = $self->_wsserv()->list_workspace_objects({
-    	workspace => "Private_PlantSEED",
-    	type => "Model",
-    	auth => $auth
-    });
-    my $models = {};
-    for (my $i=0; $i < @{$mdlobjs}; $i++) {
-    	$models->{$mdlobjs->[$i]->[0]} = $mdlobjs->[$i];
-    }
-    $output = [];
-    for (my $i=0; $i < @{$objs}; $i++) {
-    	if ($objs->[$i]->[0] =~ m/(\d+\.\d+)\.(\d+)/) {
-    		my $genome = $1;
-    		if ($2 eq $self->_userobj()->{id}) {
-    			my ($comps,$rxns,$mdlftrs,$cpds,$biocpds) = ("","","","","");
-    			my $status = "building";
-    			if (defined($models->{"PlantSEED".$objs->[$i]->[0]})) {
-    				$status = "complete";
-    				$comps = $models->{"PlantSEED".$objs->[$i]->[0]}->{number_compartments};
-    				$cpds = $models->{"PlantSEED".$objs->[$i]->[0]}->{number_compounds};
-    				$rxns = $models->{"PlantSEED".$objs->[$i]->[0]}->{number_reactions};
-    				$mdlftrs = $models->{"PlantSEED".$objs->[$i]->[0]}->{number_genes};
-    				$biocpds = $models->{"PlantSEED".$objs->[$i]->[0]}->{number_biomasscpd};
-    			}
-    			push(@{$output},{
-		    		owner => $self->_userobj()->{login},
-					id => $genome,
-					name => $objs->[$i]->[10]->{scientific_name},
-					features => $objs->[$i]->[10]->{number_features},
-					size => $objs->[$i]->[10]->{size},
-					status => $status,
-					model => "PlantSEED".$genome,
-					compartments => $comps,
-					reactions => $rxns,
-					modelfeatures => $mdlftrs,
-					compounds => $cpds,
-					biomasscpds => $biocpds
-		    	}); $objs->[$i];
-    		}
+    if ($input->{owner} ne $self->user_id()) {
+    	if ($self->is_admin() == 0) {
+    		$self->_error("Cannot request another user's jobs without admin privelages");
     	}
     }
-    return $output;
-    #END get_plantseed_genomes
+    #Retrieving user data
+    my $userobj = $self->get_user_object("login",$input->{owner});
+    if (!defined($userobj)) {
+    	$self->_error("User ".$input->{owner}." not found!");
+    }
+    #Retrieving jobs
+    my $jobs = $self->get_user_job_objects("_id",$userobj->{_id});
+    $output = [];
+    for (my $i=0; $i < @{$jobs}; $i++) {
+    	push(@{$output},{
+    		owner => $input->{owner},
+    		project => $jobs->[$i]->{project_name},
+    		id => $jobs->[$i]->{id},
+    		creation_time => $jobs->[$i]->{created_on},
+    		mod_time => $jobs->[$i]->{last_modified},
+    		genome_size => $jobs->[$i]->{genome_bp_count},
+    		contig_count => $jobs->[$i]->{genome_contig_count},
+    		genome_id => $jobs->[$i]->{genome_id},
+			genome_name => $jobs->[$i]->{genome_name},
+			type => $jobs->[$i]->{type},
+    	});
+    }
+    #END list_rast_jobs
     my @_bad_returns;
     (ref($output) eq 'ARRAY') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
     if (@_bad_returns) {
-	my $msg = "Invalid returns passed to get_plantseed_genomes:\n" . join("", map { "\t$_\n" } @_bad_returns);
+	my $msg = "Invalid returns passed to list_rast_jobs:\n" . join("", map { "\t$_\n" } @_bad_returns);
 	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'get_plantseed_genomes');
+							       method_name => 'list_rast_jobs');
     }
     return($output);
-}
-
-
-
-
-=head2 kblogin
-
-  $authtoken = $obj->kblogin($params)
-
-=over 4
-
-=item Parameter and return types
-
-=begin html
-
-<pre>
-$params is a kblogin_params
-$authtoken is a string
-kblogin_params is a reference to a hash where the following keys are defined:
-	kblogin has a value which is a string
-	kbpassword has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-$params is a kblogin_params
-$authtoken is a string
-kblogin_params is a reference to a hash where the following keys are defined:
-	kblogin has a value which is a string
-	kbpassword has a value which is a string
-
-
-=end text
-
-
-
-=item Description
-
-Login for specified kbase account
-
-=back
-
-=cut
-
-sub kblogin
-{
-    my $self = shift;
-    my($params) = @_;
-
-    my @_bad_arguments;
-    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
-    if (@_bad_arguments) {
-	my $msg = "Invalid arguments passed to kblogin:\n" . join("", map { "\t$_\n" } @_bad_arguments);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'kblogin');
-    }
-
-    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
-    my($authtoken);
-    #BEGIN kblogin
-    $self->_setContext($params);
-    $params = $self->_validateargs($params,["kblogin","kbpassword"],{});
-    require "Bio/KBase/AuthToken.pm";
-    my $token = Bio::KBase::AuthToken->new(user_id => $params->{kblogin}, password => $params->{kbpassword});
-	if (!defined($token->token())) {
-    	$self->_error("KBase login failed!",
-        'kblogin');
-    }
-    print "Three:".$params->{kblogin}."\t".$params->{kbpassword}."\n";
-	$authtoken = $token->token();
-    #END kblogin
-    my @_bad_returns;
-    (!ref($authtoken)) or push(@_bad_returns, "Invalid type for return variable \"authtoken\" (value was \"$authtoken\")");
-    if (@_bad_returns) {
-	my $msg = "Invalid returns passed to kblogin:\n" . join("", map { "\t$_\n" } @_bad_returns);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'kblogin');
-    }
-    return($authtoken);
-}
-
-
-
-
-=head2 kblogin_from_token
-
-  $login = $obj->kblogin_from_token($params)
-
-=over 4
-
-=item Parameter and return types
-
-=begin html
-
-<pre>
-$params is a kblogin_from_token_params
-$login is a string
-kblogin_from_token_params is a reference to a hash where the following keys are defined:
-	authtoken has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-$params is a kblogin_from_token_params
-$login is a string
-kblogin_from_token_params is a reference to a hash where the following keys are defined:
-	authtoken has a value which is a string
-
-
-=end text
-
-
-
-=item Description
-
-Login for specified kbase auth token
-
-=back
-
-=cut
-
-sub kblogin_from_token
-{
-    my $self = shift;
-    my($params) = @_;
-
-    my @_bad_arguments;
-    (ref($params) eq 'HASH') or push(@_bad_arguments, "Invalid type for argument \"params\" (value was \"$params\")");
-    if (@_bad_arguments) {
-	my $msg = "Invalid arguments passed to kblogin_from_token:\n" . join("", map { "\t$_\n" } @_bad_arguments);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'kblogin_from_token');
-    }
-
-    my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
-    my($login);
-    #BEGIN kblogin_from_token
-    $self->_setContext($params);
-    $params = $self->_validateargs($params,["authtoken"],{});
-	my $token = Bio::KBase::AuthToken->new(token => $params->{authtoken});
-	if (!defined($token->user_id())) {
-    	$self->_error("KBase auth token check failed!",
-        'kblogin_from_token');
-    }
-	$login = $token->user_id();
-    #END kblogin_from_token
-    my @_bad_returns;
-    (!ref($login)) or push(@_bad_returns, "Invalid type for return variable \"login\" (value was \"$login\")");
-    if (@_bad_returns) {
-	my $msg = "Invalid returns passed to kblogin_from_token:\n" . join("", map { "\t$_\n" } @_bad_returns);
-	Bio::KBase::Exceptions::ArgumentValidationError->throw(error => $msg,
-							       method_name => 'kblogin_from_token');
-    }
-    return($login);
 }
 
 
@@ -1835,6 +1433,49 @@ sub version {
 }
 
 =head1 TYPES
+
+
+
+=head2 RASTJob
+
+=over 4
+
+
+
+=item Description
+
+RAST job data
+
+        string owner - owner of the job
+        string jobid - ID of the job
+        string genome_id - ID of the genome created by the job
+
+
+=item Definition
+
+=begin html
+
+<pre>
+a reference to a hash where the following keys are defined:
+owner has a value which is a string
+jobid has a value which is a string
+genome_id has a value which is a string
+
+</pre>
+
+=end html
+
+=begin text
+
+a reference to a hash where the following keys are defined:
+owner has a value which is a string
+jobid has a value which is a string
+genome_id has a value which is a string
+
+
+=end text
+
+=back
 
 
 
@@ -1945,135 +1586,6 @@ getDNASequence has a value which is an int
 
 
 
-=head2 SEEDUser
-
-=over 4
-
-
-
-=item Description
-
-SEED user account
-
-        string username;
-    string password;
-    string firstname;
-    string lastname;
-    string email;
-    int id;
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-firstname has a value which is a string
-lastname has a value which is a string
-email has a value which is a string
-id has a value which is an int
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-firstname has a value which is a string
-lastname has a value which is a string
-email has a value which is a string
-id has a value which is an int
-
-
-=end text
-
-=back
-
-
-
-=head2 get_user_info_params
-
-=over 4
-
-
-
-=item Description
-
-Input parameters for the "get_user_info" function.
-
-        string username;
-        string password;
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-
-
-=end text
-
-=back
-
-
-
-=head2 authenticate_params
-
-=over 4
-
-
-
-=item Description
-
-Input parameters for the "authenticate" function.
-
-        string token;
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-token has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-token has a value which is a string
-
-
-=end text
-
-=back
-
-
-
 =head2 load_model_to_modelseed_params
 
 =over 4
@@ -2121,55 +1633,7 @@ biomass has a value which is a string
 
 
 
-=head2 JobObject
-
-=over 4
-
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-id has a value which is a string
-type has a value which is a string
-auth has a value which is a string
-status has a value which is a string
-jobdata has a value which is a reference to a hash where the key is a string and the value is a string
-queuetime has a value which is a string
-starttime has a value which is a string
-completetime has a value which is a string
-owner has a value which is a string
-queuecommand has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-id has a value which is a string
-type has a value which is a string
-auth has a value which is a string
-status has a value which is a string
-jobdata has a value which is a reference to a hash where the key is a string and the value is a string
-queuetime has a value which is a string
-starttime has a value which is a string
-completetime has a value which is a string
-owner has a value which is a string
-queuecommand has a value which is a string
-
-
-=end text
-
-=back
-
-
-
-=head2 create_plantseed_job_params
+=head2 list_rast_jobs_params
 
 =over 4
 
@@ -2177,11 +1641,9 @@ queuecommand has a value which is a string
 
 =item Description
 
-Input parameters for the "create_plantseed_job" function.
+Output for the "list_rast_jobs_params" function.
 
-        string username - username of owner of new genome
-        string password - password of owner of new genome
-        string fasta - fasta file data
+        string user - user for whom jobs should be listed (optional - default is authenticated user)
 
 
 =item Definition
@@ -2190,14 +1652,7 @@ Input parameters for the "create_plantseed_job" function.
 
 <pre>
 a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-fasta has a value which is a string
-contigid has a value which is a string
-source has a value which is a string
-genetic_code has a value which is a string
-domain has a value which is a string
-scientific_name has a value which is a string
+user has a value which is a string
 
 </pre>
 
@@ -2206,180 +1661,7 @@ scientific_name has a value which is a string
 =begin text
 
 a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-fasta has a value which is a string
-contigid has a value which is a string
-source has a value which is a string
-genetic_code has a value which is a string
-domain has a value which is a string
-scientific_name has a value which is a string
-
-
-=end text
-
-=back
-
-
-
-=head2 get_plantseed_genomes_params
-
-=over 4
-
-
-
-=item Description
-
-Input parameters for the "get_plantseed_genomes" function.
-
-        string username - username of owner of new genome
-        string password - password of owner of new genome
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-username has a value which is a string
-password has a value which is a string
-
-
-=end text
-
-=back
-
-
-
-=head2 plantseed_genomes
-
-=over 4
-
-
-
-=item Description
-
-Output for the "get_plantseed_genomes" function.
-
-        string owner - owner of the plantseed genome
-        string genome - ID of the plantseed genome
-        string contigs - ID of the contigs for plantseed genome
-        string model - ID of model for PlantSEED genome
-        string status - status of plantseed genome
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-owner has a value which is a string
-genome has a value which is a string
-contigs has a value which is a string
-model has a value which is a string
-status has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-owner has a value which is a string
-genome has a value which is a string
-contigs has a value which is a string
-model has a value which is a string
-status has a value which is a string
-
-
-=end text
-
-=back
-
-
-
-=head2 kblogin_params
-
-=over 4
-
-
-
-=item Description
-
-Input for "kblogin" function.
-
-        string kblogin - KBase username
-        string kbpassword - KBase password
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-kblogin has a value which is a string
-kbpassword has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-kblogin has a value which is a string
-kbpassword has a value which is a string
-
-
-=end text
-
-=back
-
-
-
-=head2 kblogin_from_token_params
-
-=over 4
-
-
-
-=item Description
-
-Input for "kblogin" function.
-
-        string authtoken - KBase token
-
-
-=item Definition
-
-=begin html
-
-<pre>
-a reference to a hash where the following keys are defined:
-authtoken has a value which is a string
-
-</pre>
-
-=end html
-
-=begin text
-
-a reference to a hash where the following keys are defined:
-authtoken has a value which is a string
+user has a value which is a string
 
 
 =end text

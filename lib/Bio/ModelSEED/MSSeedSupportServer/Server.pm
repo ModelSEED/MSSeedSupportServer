@@ -6,6 +6,7 @@ use Moose;
 use POSIX;
 use JSON;
 use Bio::KBase::Log;
+use Class::Load qw();
 use Config::Simple;
 my $get_time = sub { time, 0 };
 eval {
@@ -13,6 +14,7 @@ eval {
     $get_time = sub { Time::HiRes::gettimeofday };
 };
 
+use Bio::KBase::AuthToken;
 
 extends 'RPC::Any::Server::JSONRPC::PSGI';
 
@@ -27,16 +29,16 @@ our $CallContext;
 
 our %return_counts = (
         'getRastGenomeData' => 1,
-        'get_user_info' => 1,
-        'authenticate' => 1,
         'load_model_to_modelseed' => 1,
-        'create_plantseed_job' => 1,
-        'get_plantseed_genomes' => 1,
-        'kblogin' => 1,
-        'kblogin_from_token' => 1,
+        'list_rast_jobs' => 1,
         'version' => 1,
 );
 
+our %method_authentication = (
+        'getRastGenomeData' => 'none',
+        'load_model_to_modelseed' => 'none',
+        'list_rast_jobs' => 'required',
+);
 
 
 sub _build_valid_methods
@@ -44,13 +46,8 @@ sub _build_valid_methods
     my($self) = @_;
     my $methods = {
         'getRastGenomeData' => 1,
-        'get_user_info' => 1,
-        'authenticate' => 1,
         'load_model_to_modelseed' => 1,
-        'create_plantseed_job' => 1,
-        'get_plantseed_genomes' => 1,
-        'kblogin' => 1,
-        'kblogin_from_token' => 1,
+        'list_rast_jobs' => 1,
         'version' => 1,
     };
     return $methods;
@@ -128,6 +125,23 @@ sub _build_loggers
     $loggers->{serverlog}->set_log_level(6);
     return $loggers;
 }
+
+#
+# Override method from RPC::Any::Server::JSONRPC 
+# to eliminate the deprecation warning for Class::MOP::load_class.
+#
+sub _default_error {
+    my ($self, %params) = @_;
+    my $version = $self->default_version;
+    $version =~ s/\./_/g;
+    my $error_class = "JSON::RPC::Common::Procedure::Return::Version_${version}::Error";
+    Class::Load::load_class($error_class);
+    my $error = $error_class->new(%params);
+    my $return_class = "JSON::RPC::Common::Procedure::Return::Version_$version";
+    Class::Load::load_class($return_class);
+    return $return_class->new(error => $error);
+}
+
 
 #override of RPC::Any::Server
 sub handle_error {
@@ -221,7 +235,37 @@ sub call_method {
     
     my $args = $data->{arguments};
 
-    # Service MSSeedSupportServer does not require authentication.
+{
+    # Service MSSeedSupportServer requires authentication.
+
+    my $method_auth = $method_authentication{$method};
+    $ctx->authenticated(0);
+    if ($method_auth eq 'none')
+    {
+	# No authentication required here. Move along.
+    }
+    else
+    {
+	my $token = $self->_plack_req->header("Authorization");
+
+	if (!$token && $method_auth eq 'required')
+	{
+	    $self->exception('PerlError', "Authentication required for MSSeedSupportServer but no authentication header was passed");
+	}
+
+	my $auth_token = Bio::KBase::AuthToken->new(token => $token, ignore_authrc => 1);
+	my $valid = $auth_token->validate();
+	# Only throw an exception if authentication was required and it fails
+	if ($method_auth eq 'required' && !$valid)
+	{
+	    $self->exception('PerlError', "Token validation failed: " . $auth_token->error_message);
+	} elsif ($valid) {
+	    $ctx->authenticated(1);
+	    $ctx->user_id($auth_token->user_id);
+	    $ctx->token( $token);
+	}
+    }
+}
     my $new_isa = $self->get_package_isa($module);
     no strict 'refs';
     local @{"${module}::ISA"} = @$new_isa;
@@ -346,7 +390,7 @@ sub get_method
 			     "There is no method package named '$package'.");
 	}
 	
-	Class::MOP::load_class($module);
+	Class::Load::load_class($module);
     }
     
     if (!$module->can($method)) {

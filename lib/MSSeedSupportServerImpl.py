@@ -48,32 +48,6 @@ class MSSeedSupportServer:
         # return the results
         return [output]
 
-    def get_user_info(self, ctx, params):
-        # ctx is the context object
-        # return variables are: output
-        #BEGIN get_user_info
-        #END get_user_info
-
-        # At some point might do deeper type checking...
-        if not isinstance(output, dict):
-            raise ValueError('Method get_user_info return value ' +
-                             'output is not type dict as required.')
-        # return the results
-        return [output]
-
-    def authenticate(self, ctx, params):
-        # ctx is the context object
-        # return variables are: username
-        #BEGIN authenticate
-        #END authenticate
-
-        # At some point might do deeper type checking...
-        if not isinstance(username, basestring):
-            raise ValueError('Method authenticate return value ' +
-                             'username is not type basestring as required.')
-        # return the results
-        return [username]
-
     def load_model_to_modelseed(self, ctx, params):
         # ctx is the context object
         # return variables are: success
@@ -87,54 +61,15 @@ class MSSeedSupportServer:
         # return the results
         return [success]
 
-    def create_plantseed_job(self, ctx, params):
+    def list_rast_jobs(self, ctx, params):
         # ctx is the context object
         # return variables are: output
-        #BEGIN create_plantseed_job
-        #END create_plantseed_job
-
-        # At some point might do deeper type checking...
-        if not isinstance(output, dict):
-            raise ValueError('Method create_plantseed_job return value ' +
-                             'output is not type dict as required.')
-        # return the results
-        return [output]
-
-    def get_plantseed_genomes(self, ctx, params):
-        # ctx is the context object
-        # return variables are: output
-        #BEGIN get_plantseed_genomes
-        #END get_plantseed_genomes
+        #BEGIN list_rast_jobs
+        #END list_rast_jobs
 
         # At some point might do deeper type checking...
         if not isinstance(output, list):
-            raise ValueError('Method get_plantseed_genomes return value ' +
+            raise ValueError('Method list_rast_jobs return value ' +
                              'output is not type list as required.')
         # return the results
         return [output]
-
-    def kblogin(self, ctx, params):
-        # ctx is the context object
-        # return variables are: authtoken
-        #BEGIN kblogin
-        #END kblogin
-
-        # At some point might do deeper type checking...
-        if not isinstance(authtoken, basestring):
-            raise ValueError('Method kblogin return value ' +
-                             'authtoken is not type basestring as required.')
-        # return the results
-        return [authtoken]
-
-    def kblogin_from_token(self, ctx, params):
-        # ctx is the context object
-        # return variables are: login
-        #BEGIN kblogin_from_token
-        #END kblogin_from_token
-
-        # At some point might do deeper type checking...
-        if not isinstance(login, basestring):
-            raise ValueError('Method kblogin_from_token return value ' +
-                             'login is not type basestring as required.')
-        # return the results
-        return [login]

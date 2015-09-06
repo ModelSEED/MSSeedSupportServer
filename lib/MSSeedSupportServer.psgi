@@ -1,4 +1,4 @@
-use Bio::ModelSEED::MSSeedSupportServer::Impl;
+use Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportImpl;
 
 use Bio::ModelSEED::MSSeedSupportServer::Server;
 use Plack::Middleware::CrossOrigin;
@@ -8,7 +8,7 @@ use Plack::Middleware::CrossOrigin;
 my @dispatch;
 
 {
-    my $obj = Bio::ModelSEED::MSSeedSupportServer::Impl->new;
+    my $obj = Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportImpl->new;
     push(@dispatch, 'MSSeedSupportServer' => $obj);
 }
 
