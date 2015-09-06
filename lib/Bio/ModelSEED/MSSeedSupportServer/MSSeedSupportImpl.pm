@@ -113,6 +113,36 @@ sub validate_args {
 	return $args;
 }
 
+sub load_config {
+	my ($self,$args) = @_;
+	$args = $self->validate_args($args,[],{
+		filename => $ENV{KB_DEPLOYMENT_CONFIG},
+		service => $ENV{KB_SERVICE_NAME},
+	});
+	if (!defined($args->{service})) {
+		$self->_error("No service specified!");
+	}
+	if (!defined($args->{filename})) {
+		$self->_error("No config file specified!");
+	}
+	if (!-e $args->{filename}) {
+		$self->_error("Specified config file ".$args->{filename}." doesn't exist!");
+	}
+	my $c = Config::Simple->new();
+	$c->read($args->{filename});
+	my $hash = $c->vars();
+	my $service_config = {};
+	foreach my $key (keys(%{$hash})) {
+		my $array = [split(/\./,$key)];
+		if ($array->[0] eq $args->{service}) {
+			if ($hash->{$key} ne "null") {
+				$service_config->{$array->[1]} = $hash->{$key};
+			}
+		}
+	}
+	return $service_config;
+}
+
 =head3 _error
 
 Definition:
