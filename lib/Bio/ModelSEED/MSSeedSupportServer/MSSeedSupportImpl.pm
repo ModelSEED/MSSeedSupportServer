@@ -1040,7 +1040,7 @@ sub getRastGenomeData
     my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
     my($output);
     #BEGIN getRastGenomeData
-    $input = $self->initialize_call($input);
+    $params = $self->initialize_call($params);
     $params = $self->_validateargs($params,["genome"],{
 		getSequences => 0,
 		getDNASequence => 0
@@ -1197,7 +1197,7 @@ sub load_model_to_modelseed
     my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
     my($success);
     #BEGIN load_model_to_modelseed
-    $input = $self->initialize_call($input);
+    $params = $self->initialize_call($params);
     $params = $self->_validateargs($params,["genome","owner","reactions","biomass","cellwalltype","status"],{});
     #Getting model data
     my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
