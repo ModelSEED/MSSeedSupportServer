@@ -193,24 +193,12 @@ sub get_user_job_objects {
 
 sub webapp_db {
 	my ($self) = @_;
-	if (!defined($self->{_webappdb})) {
-    	$self->{_webappdb} = DBI->connect("DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306","webappuser");
-    	if (!defined($self->{_webappdb})) {
-        	$self->_error("Could not connect to user database!");
-    	}
-	}
-	return $self->{_webappdb};
+	return DBI->connect_cached("DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306","webappuser") or $self->_error("Could not connect to user database!");
 }
 
 sub rast_db {
 	my ($self) = @_;
-	if (!defined($self->{_rast_db})) {
-    	$self->{_rast_db} = DBI->connect("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306","rast");
-    	if (!defined($self->{_rast_db})) {
-        	$self->_error("Could not connect to rast database!");
-    	}
-	}
-	return $self->{_rast_db};
+	return DBI->connect_cached("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306","rast") or $self->_error("Could not connect to rast database!");
 }
 
 sub _getUserObj {
