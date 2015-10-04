@@ -183,6 +183,15 @@ sub get_user_object {
     return $users->[0];
 }
 
+sub authenticate {
+	my ($self,$username,$password) = @_;
+	my $userobj = $self->get_user_object("login",$username);
+	if ($password ne $userobj->{password} && crypt($password, $userobj->{password}) ne $userobj->{password}) {
+		$self->_error("Authentication failed!");
+	}
+	return $userobj;
+}
+
 sub get_user_job_objects {
 	my ($self,$field,$value) = @_;
 	my $db = $self->rast_db();
@@ -199,44 +208,6 @@ sub webapp_db {
 sub rast_db {
 	my ($self) = @_;
 	return DBI->connect_cached("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306","rast") or $self->_error("Could not connect to rast database!");
-}
-
-sub _getUserObj {
-	my ($self,$username) = @_;
-	my $db = $self->_webapp_db_connect();
-	my $select = "SELECT * FROM User WHERE User.login = ?";
-    my $columns = {
-        _id       => 1,
-        login     => 1,
-        password  => 1,
-        firstname => 1,
-        lastname  => 1,
-        email     => 1
-    };
-    my $users = $db->selectall_arrayref($select, { Slice => $columns }, $username);
-	if (!defined($users) || scalar @$users == 0) {
-        $self->_error("Username not found!",
-        '_getUserObj');
-    }
-    $db->disconnect;
-    return $users->[0];
-}
-
-sub _authenticate_user {
-	my ($self,$username,$password) = @_;
-	my $userobj = $self->_getUserObj($username);
-	if ($password ne $userobj->{password} && crypt($password, $userobj->{password}) ne $userobj->{password}) {
-		$self->_error("Authentication failed!",
-        '_authenticate_user');
-	}
-	return {
-		username => $userobj->{login},
-		id => $userobj->{_id},
-		email => $userobj->{email},
-		firstname => $userobj->{firstname},
-		lastname => $userobj->{lastname},
-		password => $userobj->{password},
-	};
 }
 
 sub _clearBiomass {
@@ -421,7 +392,7 @@ sub _getBiomassID {
 
 sub _getModelData {
 	my ($self,$db,$owner,$genome) = @_;
-	my $userobj = $self->_getUserObj($owner);
+	my $userobj = $self->get_user_object("login",$owner)
 	my $modelid = "Seed".$genome.".".$userobj->{_id};
 	my $select = "SELECT * FROM ModelDB.MODEL WHERE id = ?";
 	my $models = $db->selectall_arrayref($select, { Slice => {
@@ -709,8 +680,7 @@ sub _webapp_db_connect {
     my $user = "webappuser";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
-        $self->_error("Could not connect to database!",
-        '_authenticate_user');
+        $self->_error("Could not connect to database!");
     }
     return $db;
 }
@@ -721,8 +691,7 @@ sub _rast_db_connect {
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
-        $self->_error("Could not connect to database!",
-        '_authenticate_user');
+        $self->_error("Could not connect to database!");
     }
     return $db;
 }
@@ -733,8 +702,7 @@ sub _testrast_db_connect {
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
-        $self->_error("Could not connect to database!",
-        '_authenticate_user');
+        $self->_error("Could not connect to database!");
     }
     return $db;
 }
@@ -761,69 +729,18 @@ sub _get_rast_job {
     return $jobs->[0];
 }
 
-sub _get_rast_job_data {
-    my ($self,$genome) = @_;
-    my $output = {
-        directory => "/vol/public-pseed/FIGdisk/FIG/Data/Organisms/".$genome,
-        source => "TEMPPUBSEED"
-    };
-    if (-d "/vol/public-pseed/FIGdisk/FIG/Data/Organisms/".$genome."/") {
-        return $output;
-	}
-    my $job = $self->_get_rast_job($genome,1);
-    if (!defined($job)) {
-        $job = $self->_get_rast_job($genome);
-        if (defined($job)) {
-            $output->{directory} = "/vol/rast-prod/jobs/".$job->{id}."/rp/".$genome;
-            $output->{source} = "RAST:".$job->{id};
-            $output->{owner} = $self->_load_single_column_file("/vol/rast-prod/jobs/".$job->{id}."/USER","\t")->[0];
-        }
-    } else {
-    	$output->{directory} = "/vol/rast-test/jobs/".$job->{id}."/rp/".$genome;
-    	$output->{source} = "TESTRAST:".$job->{id};
-        $output->{owner} = $self->_load_single_column_file("/vol/rast-test/jobs/".$job->{id}."/USER","\t")->[0];  
-    }
-    if ($output->{source} =~ m/^RAST/ || $output->{source} =~ m/^TESTRAST/) {
-        if ($self->_user() eq "public") {
-            $self->_error("Must be authenticated to access model!",'getRastGenomeData');
-        } elsif ($self->_user() ne "chenry") {
-            if ($self->_has_right($genome) == 0) {
-                $self->_error("Donot have rights to genome!",'_get_rast_job_data');
-            }
-        }
-    }
-    return $output;
-}
-
-sub _user {
-	my ($self) = @_;
-	if (defined($self->_getContext()->{_userobj})) {
-		return $self->_getContext()->{_userobj}->{username};
-	}
-	return "public";
-}
-
-sub _userobj {
-	my ($self) = @_;
-	if (defined($self->_getContext()->{_userobj})) {
-		return $self->_getContext()->{_userobj};
-	}
-	return undef;
-}
-
-sub _has_right {
-    my ($self,$genome) = @_;
+sub has_right {
+    my ($self,$genome,$userobj) = @_;
     my $db = $self->_webapp_db_connect();
 	if (!defined($db)) {
-        $self->_error("Could not connect to database!",
-        '_authenticate_user');
+        $self->_error("Could not connect to database!");
     }
     my $select = "SELECT * FROM UserHasScope WHERE UserHasScope.user = ?";
     my $columns = {
         user      => 1,
         scope     => 1,
     };
-    my $scopes = $db->selectall_arrayref($select, { Slice => $columns }, $self->_userobj()->{id});
+    my $scopes = $db->selectall_arrayref($select, { Slice => $columns }, $userobj->{id});
     for (my $i=0; $i < @{$scopes}; $i++) {
         my $select = "SELECT * FROM Rights WHERE Rights.scope = ? AND Rights.data_type = ? AND Rights.data_id = ? AND Rights.granted = ?";
         my $columns = {
@@ -870,40 +787,6 @@ sub _wsserv {
     return Bio::KBase::workspaceService::Client->new('http://www.kbase.us/services/workspace_service/');
 }
 
-sub _validateargs {
-	my ($self,$args,$mandatoryArguments,$optionalArguments,$substitutions) = @_;
-	if (!defined($args)) {
-	    $args = {};
-	}
-	if (ref($args) ne "HASH") {
-		$self->_error("Arguments not hash",
-		'_validateargs');
-	}
-	if (defined($substitutions) && ref($substitutions) eq "HASH") {
-		foreach my $original (keys(%{$substitutions})) {
-			$args->{$original} = $args->{$substitutions->{$original}};
-		}
-	}
-	if (defined($mandatoryArguments)) {
-		for (my $i=0; $i < @{$mandatoryArguments}; $i++) {
-			if (!defined($args->{$mandatoryArguments->[$i]})) {
-				push(@{$args->{_error}},$mandatoryArguments->[$i]);
-			}
-		}
-	}
-	if (defined($args->{_error})) {
-		$self->_error("Mandatory arguments ".join("; ",@{$args->{_error}})." missing.",
-		'_validateargs');
-	}
-	if (defined($optionalArguments)) {
-		foreach my $argument (keys(%{$optionalArguments})) {
-			if (!defined($args->{$argument})) {
-				$args->{$argument} = $optionalArguments->{$argument};
-			}
-		}
-	}
-	return $args;
-}
 #END_HEADER
 
 sub new
@@ -1029,10 +912,23 @@ sub getRastGenomeData
     my($output);
     #BEGIN getRastGenomeData
     $params = $self->initialize_call($params);
-    $params = $self->_validateargs($params,["genome"],{
+    $params = $self->validate_args($params,["genome"],{
 		getSequences => 0,
-		getDNASequence => 0
+		getDNASequence => 0,
+		username => undef,
+		password => undef
 	});
+	if (!defined($params->{username})) {
+		$params->{username} = $self->user_id();
+	} else {
+		my $userobj = $self->authenticate($params->{username},$params->{password});
+	}
+	if (!defined($params->{username})) {
+		$self->_error("Must be authenticated or provide username and password to get RAST genome!");	
+	}
+	if ($params->{username} ne "chenry") {
+		$self->has_right($params->{genome},$self->get_user_object("login",$params->{username}));
+	}
 	my $job = $self->_get_rast_job($params->{genome});
 	if (!defined($job)) {
 		$self->_error("Could not find job for genome!",'getRastGenomeData');
@@ -1044,7 +940,7 @@ sub getRastGenomeData
         features => [],
 		gc => 0.5,
 		genome => $params->{genome},
-		owner => $self->_user()
+		owner => $params->{username}
 	};
 	#Loading genomes with FIGV
 	require FIGV;
@@ -1186,7 +1082,7 @@ sub load_model_to_modelseed
     my($success);
     #BEGIN load_model_to_modelseed
     $params = $self->initialize_call($params);
-    $params = $self->_validateargs($params,["genome","owner","reactions","biomass","cellwalltype","status"],{});
+    $params = $self->validate_args($params,["genome","owner","reactions","biomass","cellwalltype","status"],{});
     #Getting model data
     my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
     my $data = $self->_getModelData($db,$params->{owner},$params->{genome}->{id});
