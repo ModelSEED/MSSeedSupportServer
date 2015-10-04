@@ -392,7 +392,7 @@ sub _getBiomassID {
 
 sub _getModelData {
 	my ($self,$db,$owner,$genome) = @_;
-	my $userobj = $self->get_user_object("login",$owner)
+	my $userobj = $self->get_user_object("login",$owner);
 	my $modelid = "Seed".$genome.".".$userobj->{_id};
 	my $select = "SELECT * FROM ModelDB.MODEL WHERE id = ?";
 	my $models = $db->selectall_arrayref($select, { Slice => {
