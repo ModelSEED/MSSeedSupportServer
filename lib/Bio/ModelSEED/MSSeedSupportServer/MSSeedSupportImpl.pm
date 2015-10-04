@@ -1000,7 +1000,6 @@ sub getRastGenomeData
 		}
         push(@{$output->{features}}, $newRow);
 	}
-    $self->_clearContext();
     #END getRastGenomeData
     my @_bad_returns;
     (ref($output) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"output\" (value was \"$output\")");
