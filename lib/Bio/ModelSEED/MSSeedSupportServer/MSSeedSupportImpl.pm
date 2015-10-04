@@ -996,7 +996,7 @@ sub getRastGenomeData
             "ROLES"        => $RoleArray
         };
 		if (defined($Sequence) && length($Sequence) > 0) {
-#			$newRow->{SEQUENCE}->[0] = $Sequence;
+			$newRow->{SEQUENCE}->[0] = $Sequence;
 		}
         push(@{$output->{features}}, $newRow);
 	}
