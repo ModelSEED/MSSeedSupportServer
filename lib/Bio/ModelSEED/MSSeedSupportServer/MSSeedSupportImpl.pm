@@ -923,6 +923,8 @@ sub getRastGenomeData
 	} else {
 		my $userobj = $self->authenticate($params->{username},$params->{password});
 	}
+	print STDERR "User:".$self->user_id()."\n";
+	print STDERR "Username:".$params->{username}."\n";
 	if (!defined($params->{username})) {
 		$self->_error("Must be authenticated or provide username and password to get RAST genome!");	
 	}
