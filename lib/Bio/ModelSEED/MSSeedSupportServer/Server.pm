@@ -240,33 +240,21 @@ sub call_method {
 
     my $method_auth = $method_authentication{$method};
     $ctx->authenticated(0);
-    if ($method_auth eq 'none')
-    {
-	# No authentication required here. Move along.
-    }
-    else
-    {
-	my $token = $self->_plack_req->header("Authorization");
-
-	if (!$token && $method_auth eq 'required')
-	{
-	    $self->exception('PerlError', "Authentication required for MSSeedSupportServer but no authentication header was passed");
-	}
-
-	my $auth_token = Bio::KBase::AuthToken->new(token => $token, ignore_authrc => 1);
-	print STDERR "Context token:".$token."\n";
-	my $valid = $auth_token->validate();
-	# Only throw an exception if authentication was required and it fails
-	if ($method_auth eq 'required' && !$valid)
-	{
-	    $self->exception('PerlError', "Token validation failed: " . $auth_token->error_message);
-	} elsif ($valid) {
-	    $ctx->authenticated(1);
+    my $token = $self->_plack_req->header("Authorization");
+	if (defined($token)) {
+		my $auth_token = Bio::KBase::AuthToken->new(token => $token, ignore_authrc => 1);
+		my $valid = $auth_token->validate();
+		if (!$valid) {
+			$self->exception('PerlError', "Token validation failed: " . $auth_token->error_message);
+		}
+		$ctx->authenticated(1);
 	    $ctx->user_id($auth_token->user_id);
-	    print STDERR "Context user id:".$ctx->user_id()."\n";
 	    $ctx->token( $token);
+	} else {
+		if ($method_auth eq 'required') {
+			$self->exception('PerlError', "Authentication required for MSSeedSupportServer but no authentication header was passed");
+		}
 	}
-    }
 }
     my $new_isa = $self->get_package_isa($module);
     no strict 'refs';
