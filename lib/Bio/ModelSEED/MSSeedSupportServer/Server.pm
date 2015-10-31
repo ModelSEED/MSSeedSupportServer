@@ -254,6 +254,7 @@ sub call_method {
 	}
 
 	my $auth_token = Bio::KBase::AuthToken->new(token => $token, ignore_authrc => 1);
+	print STDERR "Context token:".$token."\n";
 	my $valid = $auth_token->validate();
 	# Only throw an exception if authentication was required and it fails
 	if ($method_auth eq 'required' && !$valid)
@@ -262,6 +263,7 @@ sub call_method {
 	} elsif ($valid) {
 	    $ctx->authenticated(1);
 	    $ctx->user_id($auth_token->user_id);
+	    print STDERR "Context user id:".$ctx->user_id()."\n";
 	    $ctx->token( $token);
 	}
     }
