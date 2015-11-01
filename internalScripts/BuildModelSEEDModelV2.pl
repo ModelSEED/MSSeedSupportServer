@@ -47,7 +47,7 @@ $client->{token} = $c->param("msmaint.token");
 $client->{client}->{token} = $c->param("msmaint.token");
 $wsclient->{token} = $c->param("msmaint.token");
 $wsclient->{client}->{token} = $c->param("msmaint.token");
-#my $output = $client->ModelReconstruction($input);
+my $output = $client->ModelReconstruction($input);
 
 my $mssserv = Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportClient->new($c->param("msmaint.ms-url"));
 $mssserv->{token} = $c->param("msmaint.token");
