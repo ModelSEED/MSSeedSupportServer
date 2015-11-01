@@ -9,7 +9,7 @@ use Config::Simple;
 use Bio::P3::Workspace::WorkspaceClient;
 use Bio::ModelSEED::ProbModelSEED::ProbModelSEEDClient;
 use Bio::KBase::AppService::Client;
-use Bio::ModelSEED::MSSeedSupportServer::Client;
+use Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportClient;
 use Bio::ModelSEED::Client::SAP;
 
 $|=1;
@@ -49,7 +49,7 @@ $wsclient->{token} = $c->param("msmaint.token");
 $wsclient->{client}->{token} = $c->param("msmaint.token");
 #my $output = $client->ModelReconstruction($input);
 
-my $mssserv = Bio::ModelSEED::MSSeedSupportServer::Client->new($c->param("msmaint.ms-url"));
+my $mssserv = Bio::ModelSEED::MSSeedSupportServer::MSSeedSupportClient->new($c->param("msmaint.ms-url"));
 $mssserv->{token} = $c->param("msmaint.token");
 $mssserv->{client}->{token} = $c->param("msmaint.token");
 
