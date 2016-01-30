@@ -207,7 +207,7 @@ sub webapp_db {
 
 sub rast_db {
 	my ($self) = @_;
-	return DBI->connect_cached("DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306","rast") or $self->_error("Could not connect to rast database!");
+	return DBI->connect_cached("DBI:mysql:RastProdJobCache:seed-db-write.mcs.anl.gov:3306","rast") or $self->_error("Could not connect to rast database!");
 }
 
 sub _clearBiomass {
@@ -687,7 +687,7 @@ sub _webapp_db_connect {
 
 sub _rast_db_connect {
     my ($self) = @_;
-    my $dsn = "DBI:mysql:RastProdJobCache:rast.mcs.anl.gov:3306";
+    my $dsn = "DBI:mysql:RastProdJobCache:seed-db-write.mcs.anl.gov:3306";
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
@@ -698,7 +698,7 @@ sub _rast_db_connect {
 
 sub _testrast_db_connect {
     my ($self) = @_;
-    my $dsn = "DBI:mysql:RastTestJobCache2:rast.mcs.anl.gov:3306";
+    my $dsn = "DBI:mysql:RastTestJobCache2:seed-db-write.mcs.anl.gov:3306";
     my $user = "rast";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
