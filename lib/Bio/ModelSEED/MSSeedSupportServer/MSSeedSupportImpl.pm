@@ -202,7 +202,7 @@ sub get_user_job_objects {
 
 sub webapp_db {
 	my ($self) = @_;
-	return DBI->connect_cached("DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306","webappuser") or $self->_error("Could not connect to user database!");
+	return DBI->connect_cached("DBI:mysql:WebAppBackend:seed-db-write.mcs.anl.gov:3306","webappuser") or $self->_error("Could not connect to user database!");
 }
 
 sub rast_db {
@@ -497,7 +497,7 @@ sub _addBiomass {
 sub _rxndb {
 	my ($self) = @_;
 	if (!defined($self->{_rxndb})) {
-		my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+		my $db = DBI->connect("DBI:mysql:ModelDB:seed-db-write.mcs.anl.gov:3306","webappuser");
 		$self->{_rxndb} = {};
 		my $select = "SELECT * FROM ModelDB.REACTION;";
 		my $rxns = $db->selectall_arrayref($select, { Slice => {
@@ -529,7 +529,7 @@ sub _rxndb {
 sub _cpddb {
 	my ($self) = @_;
 	if (!defined($self->{_cpddb})) {
-		my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+		my $db = DBI->connect("DBI:mysql:ModelDB:seed-db-write.mcs.anl.gov:3306","webappuser");
 		$self->{_cpddb} = {};
 		my $select = "SELECT * FROM ModelDB.COMPOUND;";
 		my $cpds = $db->selectall_arrayref($select, { Slice => {
@@ -676,7 +676,7 @@ sub _write_excel_file {
 
 sub _webapp_db_connect {
     my ($self) = @_;
-    my $dsn = "DBI:mysql:WebAppBackend:bio-app-authdb.mcs.anl.gov:3306";
+    my $dsn = "DBI:mysql:WebAppBackend:seed-db-write.mcs.anl.gov:3306";
     my $user = "webappuser";
     my $db = DBI->connect($dsn, $user);
     if (!defined($db)) {
@@ -1085,7 +1085,7 @@ sub load_model_to_modelseed
     $params = $self->initialize_call($params);
     $params = $self->validate_args($params,["genome","owner","reactions","biomass","cellwalltype","status"],{});
     #Getting model data
-    my $db = DBI->connect("DBI:mysql:ModelDB:bio-app-authdb.mcs.anl.gov:3306","webappuser");
+    my $db = DBI->connect("DBI:mysql:ModelDB:seed-db-write.mcs.anl.gov:3306","webappuser");
     my $data = $self->_getModelData($db,$params->{owner},$params->{genome}->{id});
     $data->{source} = $params->{genome}->{source};
     $data->{name} = $params->{genome}->{name};
