@@ -202,12 +202,16 @@ sub get_user_job_objects {
 
 sub webapp_db {
 	my ($self) = @_;
-	return DBI->connect_cached("DBI:mysql:WebAppBackend:seed-db-write.mcs.anl.gov:3306","webappuser") or $self->_error("Could not connect to user database!");
+	my $username = $self->config()->{'mysql_username'};
+	my $password = $self->config()->{'mysql_password'};
+	return DBI->connect_cached("DBI:mysql:WebAppBackend2:arborvitae.cels.anl.gov:3306",$username,$password) or $self->_error("Could not connect to user database!");
 }
 
 sub rast_db {
 	my ($self) = @_;
-	return DBI->connect_cached("DBI:mysql:RastProdJobCache:seed-db-write.mcs.anl.gov:3306","rast") or $self->_error("Could not connect to rast database!");
+	my $username = $self->config()->{'mysql_username'};
+	my $password = $self->config()->{'mysql_password'};
+	return DBI->connect_cached("DBI:mysql:RastProdJobCache:arborvitae.cels.anl.gov:3306",$username,$password) or $self->_error("Could not connect to rast database!");
 }
 
 sub _clearBiomass {
@@ -1295,6 +1299,7 @@ sub list_rast_jobs
     my $ctx = $Bio::ModelSEED::MSSeedSupportServer::Server::CallContext;
     my($output);
     #BEGIN list_rast_jobs
+
     $input = $self->initialize_call($input);
     $input = $self->validate_args($input,[],{
     	owner => $self->user_id()
@@ -1309,9 +1314,7 @@ sub list_rast_jobs
     if (!defined($userobj)) {
     	$self->_error("User ".$input->{owner}." not found!");
     }
-    print STDERR "User:".$self->user_id()."\n";
-    print STDERR "Owner:".$input->{owner}."\n";
-    print STDERR "_id:".$userobj->{_id}."\n";
+
     #Retrieving jobs
     my $jobs = $self->get_user_job_objects("owner",$userobj->{_id});
     $output = [];
