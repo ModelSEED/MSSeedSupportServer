@@ -739,11 +739,13 @@ sub _testrast_db_connect {
 sub _get_rast_job {
     my ($self,$genome,$test) = @_;
     my $db;
-    //if (defined($test) && $test == 1) {
-    //    $db = $self->_testrast_db_connect();
-    //} else {
+
+    #if (defined($test) && $test == 1) {
+    #    $db = $self->_testrast_db_connect();
+    #} else {
         $db = $self->_rast_db_connect();
-    //}
+    #}
+
     if (!defined($db)) {
         $self->_error("Could not connect to database!",'_get_rast_job');
     }
