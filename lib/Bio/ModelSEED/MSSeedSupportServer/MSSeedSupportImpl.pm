@@ -204,14 +204,16 @@ sub webapp_db {
 	my ($self) = @_;
 	my $username = $self->config()->{'mysql_username'};
 	my $password = $self->config()->{'mysql_password'};
-	return DBI->connect_cached("DBI:mysql:WebAppBackend2:arborvitae.cels.anl.gov:3306",$username,$password) or $self->_error("Could not connect to user database!");
+	my $url = $self->config()->{'db_url'};
+	return DBI->connect_cached("DBI:mysql:WebAppBackend2:".$url.":3306",$username,$password) or $self->_error("Could not connect to user database!");
 }
 
 sub rast_db {
 	my ($self) = @_;
 	my $username = $self->config()->{'mysql_username'};
 	my $password = $self->config()->{'mysql_password'};
-	return DBI->connect_cached("DBI:mysql:RastProdJobCache:arborvitae.cels.anl.gov:3306",$username,$password) or $self->_error("Could not connect to rast database!");
+	my $url = $self->config()->{'db_url'};
+	return DBI->connect_cached("DBI:mysql:RastProdJobCache:".$url.":3306",$username,$password) or $self->_error("Could not connect to rast database!");
 }
 
 sub _clearBiomass {
@@ -501,7 +503,11 @@ sub _addBiomass {
 sub _rxndb {
 	my ($self) = @_;
 	if (!defined($self->{_rxndb})) {
-		my $db = DBI->connect("DBI:mysql:ModelDB:seed-db-write.mcs.anl.gov:3306","webappuser");
+	    my $username = $self->config()->{'mysql_username'};
+	    my $password = $self->config()->{'mysql_password'};
+	    my $url = $self->config()->{'db_url'};
+
+		my $db = DBI->connect("DBI:mysql:ModelDB:".$url.".mcs.anl.gov:3306",$username,$password);
 		$self->{_rxndb} = {};
 		my $select = "SELECT * FROM ModelDB.REACTION;";
 		my $rxns = $db->selectall_arrayref($select, { Slice => {
@@ -533,7 +539,11 @@ sub _rxndb {
 sub _cpddb {
 	my ($self) = @_;
 	if (!defined($self->{_cpddb})) {
-		my $db = DBI->connect("DBI:mysql:ModelDB:seed-db-write.mcs.anl.gov:3306","webappuser");
+	my $username = $self->config()->{'mysql_username'};
+	my $password = $self->config()->{'mysql_password'};
+	my $url = $self->config()->{'db_url'};
+
+		my $db = DBI->connect("DBI:mysql:ModelDB:".$url.".mcs.anl.gov:3306",$username,$password);
 		$self->{_cpddb} = {};
 		my $select = "SELECT * FROM ModelDB.COMPOUND;";
 		my $cpds = $db->selectall_arrayref($select, { Slice => {
@@ -680,9 +690,14 @@ sub _write_excel_file {
 
 sub _webapp_db_connect {
     my ($self) = @_;
-    my $dsn = "DBI:mysql:WebAppBackend:seed-db-write.mcs.anl.gov:3306";
-    my $user = "webappuser";
-    my $db = DBI->connect($dsn, $user);
+
+    my $username = $self->config()->{'mysql_username'};
+    my $password = $self->config()->{'mysql_password'};
+    my $url = $self->config()->{'db_url'};
+
+    my $dsn = "DBI:mysql:WebAppBackend2:".$url.".mcs.anl.gov:3306";
+
+    my $db = DBI->connect($dsn, $username, $password);
     if (!defined($db)) {
         $self->_error("Could not connect to database!");
     }
@@ -691,9 +706,14 @@ sub _webapp_db_connect {
 
 sub _rast_db_connect {
     my ($self) = @_;
-    my $dsn = "DBI:mysql:RastProdJobCache:seed-db-write.mcs.anl.gov:3306";
-    my $user = "rast";
-    my $db = DBI->connect($dsn, $user);
+
+    my $username = $self->config()->{'mysql_username'};
+    my $password = $self->config()->{'mysql_password'};
+    my $url = $self->config()->{'db_url'};
+
+    my $dsn = "DBI:mysql:RastProdJobCache:".$url.".mcs.anl.gov:3306";
+
+    my $db = DBI->connect($dsn, $username, $password);
     if (!defined($db)) {
         $self->_error("Could not connect to database!");
     }
@@ -702,9 +722,14 @@ sub _rast_db_connect {
 
 sub _testrast_db_connect {
     my ($self) = @_;
-    my $dsn = "DBI:mysql:RastTestJobCache2:seed-db-write.mcs.anl.gov:3306";
-    my $user = "rast";
-    my $db = DBI->connect($dsn, $user);
+
+    my $username = $self->config()->{'mysql_username'};
+    my $password = $self->config()->{'mysql_password'};
+    my $url = $self->config()->{'db_url'};
+
+    my $dsn = "DBI:mysql:RastTestJobCache2:".$url.".mcs.anl.gov:3306";
+
+    my $db = DBI->connect($dsn, $username, $password);
     if (!defined($db)) {
         $self->_error("Could not connect to database!");
     }
@@ -714,11 +739,11 @@ sub _testrast_db_connect {
 sub _get_rast_job {
     my ($self,$genome,$test) = @_;
     my $db;
-    if (defined($test) && $test == 1) {
-        $db = $self->_testrast_db_connect();
-    } else {
+    //if (defined($test) && $test == 1) {
+    //    $db = $self->_testrast_db_connect();
+    //} else {
         $db = $self->_rast_db_connect();
-    }
+    //}
     if (!defined($db)) {
         $self->_error("Could not connect to database!",'_get_rast_job');
     }
@@ -1089,7 +1114,12 @@ sub load_model_to_modelseed
     $params = $self->initialize_call($params);
     $params = $self->validate_args($params,["genome","owner","reactions","biomass","cellwalltype","status"],{});
     #Getting model data
-    my $db = DBI->connect("DBI:mysql:ModelDB:seed-db-write.mcs.anl.gov:3306","webappuser");
+
+    my $username = $self->config()->{'mysql_username'};
+    my $password = $self->config()->{'mysql_password'};
+    my $url = $self->config()->{'db_url'};
+
+    my $db = DBI->connect("DBI:mysql:ModelDB:".$url.".mcs.anl.gov:3306",$username,$password);
     my $data = $self->_getModelData($db,$params->{owner},$params->{genome}->{id});
     $data->{source} = $params->{genome}->{source};
     $data->{name} = $params->{genome}->{name};
