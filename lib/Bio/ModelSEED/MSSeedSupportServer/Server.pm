@@ -249,7 +249,7 @@ sub call_method {
 		}
 		$ctx->authenticated(1);
 	    $ctx->user_id($auth_token->user_id);
-	    $ctx->token( $token);
+	    $ctx->token($token);
 	} else {
 		if ($method_auth eq 'required') {
 			$self->exception('PerlError', "Authentication required for MSSeedSupportServer but no authentication header was passed");
